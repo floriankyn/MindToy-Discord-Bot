@@ -1,0 +1,14 @@
+{
+  "discord": {
+    "token": "DISCORD_TOKEN",
+    "guild_id": "GUILD_ID"
+  },
+
+  "database": {
+    "username": "bot",
+    "database": "discord_template",
+    "password": "123456789",
+    "host": "localhost",
+    "port": "3308"
+  }
+}
