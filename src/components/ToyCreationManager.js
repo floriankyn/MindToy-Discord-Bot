@@ -88,6 +88,10 @@ class ToyCreationManager{
         console.log(userInputData)
     }
 
+    async generateImages(data) {
+
+    }
+
     async gatherUserInput() {
         return await new Promise(async (resolve) => {
             let data = {};
@@ -97,14 +101,149 @@ class ToyCreationManager{
             data.color2 = await this.selectColor("second");
             data.words = await this.typeWords();
 
-            await this.summerUp(data);
+            data = await this.summerUp(data);
 
             resolve(data)
         });
     }
 
-    async summerUp(data) {
+    async summerUp(Data) {
+        let data = Data;
 
+        let proceed = false;
+
+        while(!proceed) {
+            await new Promise(async (resolve) => {
+                let stuff = [
+                    {
+                        name: "Style",
+                        value: `> **${data.style[0]}**`,
+                        inline: true
+                    },
+                    {
+                        name: `Primary Color`,
+                        value: `> **${data.color1[0]}**`,
+                        inline: true
+                    },
+                    {
+                        name: '\u200B',
+                        value: '\u200B',
+                        inline: true
+                    },
+                    {
+                        name: "Secondary Color",
+                        value: `> **${data.color2[0]}**`,
+                        inline: true
+                    },
+                    {
+                        name: "Words",
+                        value: `> **${data.words}**`,
+                        inline: true
+                    },
+                    {
+                        name: '\u200B',
+                        value: '\u200B',
+                        inline: true
+                    },
+                ]
+                
+                let embed =
+                    new EmbedBuilder()
+                        .setTitle("Summarize")
+                        .setColor("Blue")
+                        .setDescription(`${this.interaction.user} wonderful! Review the given info. You can edit them by clicking the proper button below.`)
+                        .addFields(
+                            stuff
+                        )
+                        .setFooter(
+                            {
+                                text: this.interaction.guild.name,
+                                iconURL: this.interaction.guild.iconURL()
+                            }
+                        )
+                        .setTimestamp()
+
+                let component =
+                    new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setStyle("Primary")
+                                .setLabel("Style")
+                                .setCustomId("style")
+                        )
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setStyle("Primary")
+                                .setLabel("Primary Color")
+                                .setCustomId("color1")
+                        )
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setStyle("Primary")
+                                .setLabel("Secondary Color")
+                                .setCustomId("color2")
+                        )
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setStyle("Primary")
+                                .setLabel("Words")
+                                .setCustomId("words")
+                        )
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setStyle("Success")
+                                .setLabel("Generate")
+                                .setCustomId("generate")
+                        )
+
+                await this.interaction.followUp(
+                    {
+                        ephemeral: true,
+                        embeds: [embed],
+                        components: [component]
+                    }
+                ).then(async (interactionMessage) => {
+                    const filter = (i) => i.user.id === this.interaction.user.id;
+
+                    await interactionMessage.awaitMessageComponent({filter, time: 120_000})
+                        .then(
+                            async (collected) => {
+                                await collected.deferUpdate().then().catch(console.error);
+                                await collected.deleteReply().then().catch(console.error);
+
+                                switch (collected.customId) {
+                                    case "style":
+                                        data.style = await this.selectStyle();
+                                        resolve();
+                                        break;
+                                    case "color1":
+                                        data.color1 = await this.selectStyle("first");
+                                        resolve();
+                                        break;
+                                    case "color2":
+                                        data.color2 = await this.selectColor("second");
+                                        resolve();
+                                        break;
+                                    case "words":
+                                        data.words = await this.typeWords();
+                                        resolve();
+                                        break;
+                                    case "generate":
+                                        await this.generateImages(data);
+                                        resolve(proceed = true);
+                                        break;
+                                }
+                            }
+                        )
+                        .catch(
+                            async () => {
+                                await this.endCollector(1)
+                            }
+                        )
+
+                }).catch(console.error)
+            });
+        }
     }
 
     async selectStyle() {
@@ -154,8 +293,9 @@ class ToyCreationManager{
                             .setCustomId("style_selection")
                     )
 
-            await this.interaction.editReply(
+            await this.interaction.followUp(
                 {
+                    ephemeral: true,
                     embeds: [embed],
                     components: [component]
                 }
@@ -319,8 +459,9 @@ class ToyCreationManager{
                                                 input = input.slice().split(/ /);
 
                                                 if(input.length === 2 || input.length === 1) {
-                                                    resolve2(passed = false)
-                                                    resolve(submission.fields.getTextInputValue("inputtedWords"))
+                                                    await resolve2(passed = false)
+                                                    await collected.deleteReply().then().catch(console.error);
+                                                    await resolve(submission.fields.getTextInputValue("inputtedWords"))
                                                 } else {
                                                     resolve2(passed = true)
                                                 }
@@ -329,8 +470,8 @@ class ToyCreationManager{
                                         )
                                         .catch(
                                             async () => {
-                                                resolve2(passed = false)
                                                 await this.endCollector(1)
+                                                await resolve2(passed = false)
                                             }
                                         );
                                 }
