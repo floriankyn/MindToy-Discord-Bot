@@ -95,10 +95,16 @@ class ToyCreationManager{
             data.style = await this.selectStyle()
             data.color1 = await this.selectColor("first");
             data.color2 = await this.selectColor("second");
-            data.words = await this.typeWords()
+            data.words = await this.typeWords();
+
+            await this.summerUp(data);
 
             resolve(data)
         });
+    }
+
+    async summerUp(data) {
+
     }
 
     async selectStyle() {
@@ -166,7 +172,7 @@ class ToyCreationManager{
                         }
                     )
                     .catch(
-                        async (err) => {
+                        async () => {
                             await this.endCollector(1)
                         }
                     )
@@ -240,14 +246,13 @@ class ToyCreationManager{
                         }
                     )
                     .catch(
-                        async (err) => {
+                        async () => {
                             await this.endCollector(1)
                         }
                     )
             }).catch(console.error);
         });
     }
-
 
     async typeWords() {
         return await new Promise(async (resolve) => {
@@ -281,43 +286,62 @@ class ToyCreationManager{
                 }
             ).then(async (interactionMessage) => {
                 const filter = (i) => i.customId === 'input_words' && i.user.id === this.interaction.user.id;
-                await interactionMessage.awaitMessageComponent({filter, time: 120_000})
-                    .then(
-                        async (collected) => {
-                            const modal = new ModalBuilder()
-                                .setCustomId('words')
-                                .setTitle('Words');
 
-                            const wordsInput = new TextInputBuilder()
-                                .setCustomId('inputtedWords')
-                                .setLabel("What will be the generation words?")
-                                .setStyle(TextInputStyle.Short);
+                let passed = true;
 
-                            const firstActionRow = new ActionRowBuilder().addComponents(wordsInput);
-                            modal.addComponents(firstActionRow);
+                while (passed) {
+                    await new Promise(async (resolve2) => {
+                        await interactionMessage.awaitMessageComponent({filter, time: 120_000})
+                            .then(
+                                async (collected) => {
+                                    const modal = new ModalBuilder()
+                                        .setCustomId('words')
+                                        .setTitle('Words');
 
-                            await collected.showModal(modal).then().catch(console.error);
+                                    const wordsInput = new TextInputBuilder()
+                                        .setCustomId('inputtedWords')
+                                        .setLabel("What will be the generation words?")
+                                        .setStyle(TextInputStyle.Short);
 
-                            const filter = (interaction) => interaction.customId === 'words';
-                            collected.awaitModalSubmit({ filter, time: 120_000 })
-                                .then(
-                                    async (submission) => {
-                                        await submission.deferUpdate().then().catch(console.error);
-                                        resolve(submission.fields.getTextInputValue("inputtedWords"))
-                                    }
-                                )
-                                .catch(
-                                    async (err) => {
-                                        await this.endCollector(1)
-                                    }
-                                );
-                        }
-                    )
-                    .catch(
-                        async (err) => {
-                            await this.endCollector(1)
-                        }
-                    )
+                                    const firstActionRow = new ActionRowBuilder().addComponents(wordsInput);
+                                    modal.addComponents(firstActionRow);
+
+
+                                    await collected.showModal(modal).then().catch(console.error);
+                                    const filter = (interaction) => interaction.customId === 'words';
+
+                                    collected.awaitModalSubmit({ filter, time: 120_000 })
+                                        .then(
+                                            async (submission) => {
+                                                await submission.deferUpdate().then().catch(console.error);
+
+                                                let input = submission.fields.getTextInputValue("inputtedWords");
+                                                input = input.slice().split(/ /);
+
+                                                if(input.length === 2 || input.length === 1) {
+                                                    resolve2(passed = false)
+                                                    resolve(submission.fields.getTextInputValue("inputtedWords"))
+                                                } else {
+                                                    resolve2(passed = true)
+                                                }
+
+                                            }
+                                        )
+                                        .catch(
+                                            async () => {
+                                                resolve2(passed = false)
+                                                await this.endCollector(1)
+                                            }
+                                        );
+                                }
+                            )
+                            .catch(
+                                async () => {
+                                    await this.endCollector(1)
+                                }
+                            )
+                    });
+                }
             }).catch(console.error);
         });
     }
