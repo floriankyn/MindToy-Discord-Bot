@@ -40,7 +40,7 @@ class ToyCreationManager{
                     await this.interaction.deferReply({ephemeral: true}).then().catch(console.error);
 
                     if(await this.checkCreationStatus()) {
-                        await this.initNewGeneration();
+                        await this.gatherUserInput();
                     } else {
                         await this.backToPreviousGeneration();
                     }
@@ -49,6 +49,75 @@ class ToyCreationManager{
         } else {
             await this.displayErrorMessage(`${this.interaction.user}, Please finish your toy before trying to generate a new one.`);
         }
+    }
+
+    async backToPreviousGeneration() {
+
+    }
+
+    async fetchCollection() {
+
+    }
+
+    async initNewGeneration(data) {
+        let stuff = [
+            {
+                name: "Style",
+                value: `> **${data.style[0]}**`,
+                inline: true
+            },
+            {
+                name: `Primary Color`,
+                value: `> **${data.color1[0]}**`,
+                inline: true
+            },
+            {
+                name: '\u200B',
+                value: '\u200B',
+                inline: true
+            },
+            {
+                name: "Secondary Color",
+                value: `> **${data.color2[0]}**`,
+                inline: true
+            },
+            {
+                name: "Words",
+                value: `> **${data.words}**`,
+                inline: true
+            },
+            {
+                name: '\u200B',
+                value: '\u200B',
+                inline: true
+            },
+        ]
+
+        let embed =
+            new EmbedBuilder()
+                .setTitle("Generation")
+                .setColor("Blue")
+                .setDescription(`${this.interaction.user} The images are being generated. Please wait!`)
+                .setImage("https://miro.medium.com/max/700/1*CsJ05WEGfunYMLGfsT2sXA.gif")
+                .addFields(
+                    stuff
+                )
+                .setFooter(
+                    {
+                        text: this.interaction.guild.name,
+                        iconURL: this.interaction.guild.iconURL()
+                    }
+                )
+                .setTimestamp()
+
+        await this.interaction.followUp(
+            {
+                ephemeral: true,
+                embeds: [embed]
+            }
+        ).then(async (interactionMessage) => {
+
+        }).catch(console.error);
     }
 
     async checkCreationStatus() {
@@ -76,20 +145,6 @@ class ToyCreationManager{
                 resolve(hasToken)
             });
         });
-    }
-
-    async backToPreviousGeneration() {
-
-    }
-
-    async initNewGeneration() {
-        let userInputData = await this.gatherUserInput();
-
-        console.log(userInputData)
-    }
-
-    async generateImages(data) {
-
     }
 
     async gatherUserInput() {
@@ -146,7 +201,7 @@ class ToyCreationManager{
                         inline: true
                     },
                 ]
-                
+
                 let embed =
                     new EmbedBuilder()
                         .setTitle("Summarize")
@@ -229,7 +284,7 @@ class ToyCreationManager{
                                         resolve();
                                         break;
                                     case "generate":
-                                        await this.generateImages(data);
+                                        await this.initNewGeneration(data);
                                         resolve(proceed = true);
                                         break;
                                 }
@@ -485,10 +540,6 @@ class ToyCreationManager{
                 }
             }).catch(console.error);
         });
-    }
-
-    async fetchCollection() {
-
     }
     
     async displayErrorMessage(type) {
