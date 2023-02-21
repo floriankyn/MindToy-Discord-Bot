@@ -1,9 +1,13 @@
 //ToyCreationManager.js//
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder } = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder,
+    Base
+} = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
 const { CommandsLoader } = require("./CommandsLoader.js");
 const { Database } = require("../database/Database.js");
 const fs = require("fs");
+const { Base64 } = require('js-base64');
+const sdk = require('api')('@scenario-api/v1.0#5lwpphle8jvsvf');
 let Initiations = new Set();
 
 class ToyCreationManager{
@@ -116,6 +120,52 @@ class ToyCreationManager{
                 embeds: [embed]
             }
         ).then(async (interactionMessage) => {
+            let imagesCreation =
+                await new Promise(async (resolve) => {
+                    let options =
+                        {
+                            parameters: {
+                                type: "txt2img",
+                                prompt: `${data.style} ${data.color1} ${data.color2} ${data.words}`
+                            },
+                            Accept: "application/json",
+                            "Content-Type": "application/json",
+                            Authorization: `Basic ${Base64.encode(`${this.config.stable_diffusion.api_key}:${this.config.stable_diffusion.api_secret}`)}`
+                        }
+
+
+                    sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
+                    sdk.postModelsModelidInferences(
+                        {
+                            parameters: {
+                                type: 'txt2img',
+                                prompt: `${data.style} ${data.color1} ${data.color2} ${data.words}`
+                            }
+                        },
+                        {
+                            modelId: 'caVLgv5XSlOF7vQTYQGwfg'
+                        }
+                    ).then(({ data }) => {
+                        resolve(data);
+                    }).catch(err => console.error);
+                });
+
+            console.log(imagesCreation)
+
+            let createdImages = await new Promise(async (resolve) => {
+                setTimeout(() => {
+                    sdk.getModelsModelidInferences({modelId: 'caVLgv5XSlOF7vQTYQGwfg'})
+                        .then(({data}) => {
+                            resolve(data)
+                        })
+                        .catch(err => console.error(err));
+                }, 30000)
+            });
+
+
+            fs.writeFileSync(`./response.json`, JSON.stringify(createdImages));
+
+
 
         }).catch(console.error);
     }
@@ -305,25 +355,21 @@ class ToyCreationManager{
         return await new Promise(async (resolve) => {
             let styles = [
                 {
-                    label: "style1",
-                    value: "style1"
+                    label: "Kawaii",
+                    value: "kawaii"
                 },
                 {
-                    label: "style2",
-                    value: "style2"
+                    label: "Abstract",
+                    value: "abstract"
                 },
                 {
-                    label: "style3",
-                    value: "style3"
+                    label: "Fantasy",
+                    value: "fantasy"
                 },
                 {
-                    label: "style4",
-                    value: "style4"
-                },
-                {
-                    label: "style5",
-                    value: "style5"
-                },
+                    label: "Wildcard",
+                    value: "wildcard"
+                }
             ]
 
             let embed =
@@ -379,24 +425,24 @@ class ToyCreationManager{
         return await new Promise(async (resolve) => {
             let colors = [
                 {
-                    label: "color1",
-                    value: "color1"
+                    label: "Blue",
+                    value: "blue"
                 },
                 {
-                    label: "color2",
-                    value: "color2"
+                    label: "Red",
+                    value: "red"
                 },
                 {
-                    label: "color3",
-                    value: "color3"
+                    label: "Yellow",
+                    value: "yellow"
                 },
                 {
-                    label: "color4",
-                    value: "color4"
+                    label: "Pink",
+                    value: "pink"
                 },
                 {
-                    label: "color5",
-                    value: "color5"
+                    label: "Black",
+                    value: "black"
                 },
             ]
 
