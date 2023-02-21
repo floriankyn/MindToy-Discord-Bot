@@ -30,7 +30,7 @@ const { SQLTablesManager } = require("./components/SQLTablesManager.js");
 const { Database } = require("./database/Database.js");
 
 //Modules Imports
-
+const { ToyCreationManager } = require("./components/ToyCreationManager.js");
 
 client.on('ready', async() => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -38,20 +38,19 @@ client.on('ready', async() => {
     await new Database(config).checkConnectionState();
 
     await new SQLTablesManager(config, [
-
+        ToyCreationManager
     ]).loadTables();
 
     await new CommandsLoader(client, [
-
+        ToyCreationManager
     ], config).loadCommands();
 });
 
-client.on("interactionCreate", (interaction) => {
-
+client.on("interactionCreate", async (interaction) => {
+    await new ToyCreationManager(interaction, client, config).on();
 });
 
-client.on(`messageCreate`, (message) => {
-
-})
+client.on(`messageCreate`, async (message) => {
+});
 
 client.login(config.discord.token).then().catch();
