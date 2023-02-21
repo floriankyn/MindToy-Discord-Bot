@@ -1,12 +1,12 @@
 {
   "discord": {
-    "token": "DISCORD_TOKEN",
-    "guild_id": "GUILD_ID"
+    "token": "MTA3Njg5MzcyMzMyNzIxMzY4MQ.GV8PdO.2mDIVQe6_A_Vr8CXkm1knQAxOX-QFY49Ssq1FM",
+    "guild_id": "1076893135814271076"
   },
 
   "database": {
     "username": "bot",
-    "database": "discord_template",
+    "database": "mindtoy",
     "password": "123456789",
     "host": "localhost",
     "port": "3308"
