@@ -12,7 +12,8 @@ const sdk = require('api')('@scenario-api/v1.0#5lwpphle8jvsvf');
 let Initiations = new Set();
 const wait = require('util').promisify(setTimeout);
 const { createCanvas, loadImage } = require('canvas')
-const {use} = require("needle/lib/parsers");
+const fetch = require('node-fetch');
+
 
 
 class ToyCreationManager{
@@ -50,7 +51,8 @@ class ToyCreationManager{
                     await this.interaction.deferReply({ephemeral: true}).then().catch(console.error);
 
                     if(await this.checkCreationStatus()) {
-                        await this.gatherUserInput();
+                        await this.magnifyImage2(null)
+                        //await this.gatherUserInput();
                     } else {
                         await this.backToPreviousGeneration();
                     }
@@ -379,8 +381,128 @@ class ToyCreationManager{
         ).catch(console.error);
     }
 
-    async paypalPayment(conn) {
+    async magnifyImage2(conn) {
+        //let attachment = new AttachmentBuilder(img, {name: "generation.png"});
+        await this.interaction.editReply(
+            {
+                ephemeral: true,
+                embeds: [
+                    new EmbedBuilder()
+                        .setImage("https://media.discordapp.net/ephemeral-attachments/1077392709913948260/1078481239679451186/generation.png?width=675&height=675")
+                        .setColor("Blue")
+                        .setDescription("Wonderful! Now you can go ahead and purchase your toy and nft! Hit the payment method you'd like to use.")
+                ],
+                components: [
+                    new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setStyle("Primary")
+                                .setLabel("Paypal")
+                                .setEmoji("<:paypal:1077766385297522749>")
+                                .setCustomId("paypal")
+                        )
+                ]
+            }
+        ).then(
+            async (message) => {
+                const filter = (i) => i.user.id === this.interaction.user.id;
 
+                await this.interaction.channel.awaitMessageComponent({filter, time: 120_000})
+                    .then(
+                        async (collected) => {
+                            switch (collected.customId) {
+                                case "paypal":
+                                    await this.paypalPayment(conn);
+                                    break;
+                            }
+                        }
+                    )
+                    .catch(console.error);
+            }
+        ).catch(console.error);
+    }
+
+    async paypalPayment(conn) {
+        let access_token = await new Promise(async (resolve) => {
+            const clientId = this.config.paypal.client_id;
+            const clientSecret = this.config.paypal.client_secret;
+
+            const url = 'https://api-m.sandbox.paypal.com/v1/oauth2/token';
+            const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+            const options = {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${auth}`,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'grant_type=client_credentials'
+            };
+
+            await fetch(url, options)
+                .then(res => {
+                    resolve(res.json())
+                })
+                .then(data => console.log(data))
+                .catch(err => console.error(err));
+        });
+
+        console.log(access_token)
+
+
+        let order = await new Promise(async (resolve) => {
+            const data = {
+                "intent": "CAPTURE",
+                "purchase_units": [
+                    {
+                        "items": [
+                            {
+                                "name": "Mind Toy#001",
+                                "description": "45mm  Style: Kawaii Fluffy Volcano. Delivered to you within 3/4 weeks internationally + Flow nft to.",
+                                "quantity": "1",
+                                "unit_amount": {
+                                    "currency_code": "USD",
+                                    "value": "100.00"
+                                }
+                            }
+                        ],
+                        "amount": {
+                            "currency_code": "USD",
+                            "value": "100.00",
+                            "breakdown": {
+                                "item_total": {
+                                    "currency_code": "USD",
+                                    "value": "100.00"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "application_context": {
+                    "return_url": "https://example.com/return",
+                    "cancel_url": "https://example.com/cancel"
+                }
+            }
+
+            await fetch('https://api-m.sandbox.paypal.com/v2/checkout/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${access_token.access_token}`,
+                },
+                body: JSON.stringify(data)
+            })
+                .then(res => {
+                    resolve(res.json())
+                })
+                .then(data => console.log(data))
+                .catch(err => console.error(err));
+        });
+
+        console.log(order)
+
+
+        
     }
 
     async checkCreationStatus() {
@@ -657,6 +779,14 @@ class ToyCreationManager{
                     label: "Black",
                     value: "black"
                 },
+                {
+                    label: "Green",
+                    value: "green"
+                },
+                {
+                    label: "White",
+                    value: "white"
+                },
             ]
 
             let embed =
@@ -800,7 +930,7 @@ class ToyCreationManager{
             }).catch(console.error);
         });
     }
-    
+
     async displayErrorMessage(type) {
         let msg;
 
