@@ -13,8 +13,13 @@ let Initiations = new Set();
 const wait = require('util').promisify(setTimeout);
 const { createCanvas, loadImage } = require('canvas')
 const fetch = require('node-fetch');
+const { request } = require('graphql-request');
+const axios = require("axios")
+const url = require("url")
+const request2 = require('request');
+const {raw} = require("mysql2");
 
-
+console.log(__dirname + "/assets/images/styles/headz.png")
 
 class ToyCreationManager{
     constructor(interaction=null, client=null, config=null) {
@@ -31,7 +36,8 @@ class ToyCreationManager{
     loadTables() {
         return [
             `CREATE TABLE IF NOT EXISTS dc_creation_tokens (user_id VARCHAR(30), tokens VARCHAR(10), cooldown VARCHAR(30))`,
-            `CREATE TABLE IF NOT EXISTS dc_generated_toys (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(40), image1 TEXT, image2 TEXT, image3 TEXT, image4 TEXT, date DATETIME)`
+            `CREATE TABLE IF NOT EXISTS dc_generated_toys (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(40), image1 TEXT, image2 TEXT, image3 TEXT, image4 TEXT, date DATETIME)`,
+            `CREATE TABLE IF NOT EXISTS dc_minted_nfts (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(30), nft_id VARCHAR(255))`
         ];
     }
 
@@ -51,8 +57,26 @@ class ToyCreationManager{
                     await this.interaction.deferReply({ephemeral: true}).then().catch(console.error);
 
                     if(await this.checkCreationStatus()) {
-                        await this.magnifyImage2(null)
-                        //await this.gatherUserInput();
+                        //await this.magnifyImage2(null)
+                        await this.gatherUserInput();
+                        /*
+                        this.db.connection().getConnection(async (err, conn) => {
+                            if(err) throw err;
+
+                            let LOCALDATA = {
+                                style: "kawaii",
+                                words: "fluffy volcano",
+                                artist: this.interaction.user.username,
+                                color1: "red",
+                                color2: "black"
+                            }
+
+                            await this.nftManagment(conn, LOCALDATA);
+
+                            this.db.connection().releaseConnection(conn);
+                        });
+                         */
+
                     } else {
                         await this.backToPreviousGeneration();
                     }
@@ -71,7 +95,7 @@ class ToyCreationManager{
 
     }
 
-    async initNewGeneration(data) {
+    async initNewGeneration(data, regeneration) {
         let stuff = [
             {
                 name: "Style",
@@ -124,30 +148,14 @@ class ToyCreationManager{
 
 
 
-        this.interaction.followUp(
+        await this.interaction.followUp(
             {
                 ephemeral: true,
                 fetchReply: true,
                 embeds: [embed]
             }
         ).then(async (interactionMessage) => {
-            let imagesCreation =
-                await new Promise(async (resolve) => {
-                    sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
-                    sdk.postModelsModelidInferences(
-                        {
-                            parameters: {
-                                type: 'txt2img',
-                                prompt: `Minimal Abstract Art Toy, ${data.style}, ${data.color1}, ${data.color2}, ${data.words}`
-                            }
-                        },
-                        {
-                            modelId: 'caVLgv5XSlOF7vQTYQGwfg'
-                        }
-                    ).then(({ data }) => {
-                        resolve(data);
-                    }).catch(err => console.error);
-                });
+            let imagesCreation = await this.pickStyle(data.style, data)
 
             let imageGenerationStatus = false;
 
@@ -194,15 +202,15 @@ class ToyCreationManager{
                     ctxImg3b.drawImage(generation3, 0, 0, 1024, 1024);
                     ctxImg4b.drawImage(generation4, 0, 0, 1024, 1024);
 
-                    ctx.drawImage(generation1, 0, 512, 512, 512);
-                    ctx.drawImage(generation2, 512, 512, 512, 512);
-                    ctx.drawImage(generation3, 0, 0, 512, 512);
-                    ctx.drawImage(generation4, 512, 0, 512, 512);
+                    ctx.drawImage(generation1, 0, 0, 512, 512);
+                    ctx.drawImage(generation2, 512, 0, 512, 512);
+                    ctx.drawImage(generation3, 0, 512, 512, 512);
+                    ctx.drawImage(generation4, 512, 512, 512, 512);
 
                     img1Buffer = img1b.toBuffer();
-                    img2Buffer = img1b.toBuffer();
-                    img3Buffer = img1b.toBuffer();
-                    img4Buffer = img1b.toBuffer();
+                    img2Buffer = img2b.toBuffer();
+                    img3Buffer = img3b.toBuffer();
+                    img4Buffer = img4b.toBuffer();
 
                     attachment = new AttachmentBuilder(canvas.toBuffer(), {name: "generation.png"});
                     file.push(attachment)
@@ -247,7 +255,6 @@ class ToyCreationManager{
                                 new EmbedBuilder()
                                     .setTitle("Generation")
                                     .setColor("Blue")
-                                    .setDescription(`${this.interaction.user} The images are being generated. Please wait!`)
                                     .setImage(img)
                                     .addFields(
                                         stuff
@@ -287,6 +294,12 @@ class ToyCreationManager{
                                             .setLabel("#4")
                                             .setCustomId("image4")
                                     )
+                                    .addComponents(
+                                        new ButtonBuilder()
+                                            .setEmoji("🔁")
+                                            .setStyle("Secondary")
+                                            .setCustomId("regenerate")
+                                    )
                             ]
                         }
                     ).then(async (message) => {
@@ -306,11 +319,11 @@ class ToyCreationManager{
 
                             const filter = (i) => i.user.id === this.interaction.user.id;
 
-                            await this.interaction.channel.awaitMessageComponent({filter, time: 120_000})
+                            await this.interaction.channel.awaitMessageComponent({filter})
                                 .then(
                                     async (collected) => {
                                         await collected.deferUpdate().then().catch(console.error);
-                                        await collected.deleteReply().then().catch(console.error);
+
                                         switch (collected.customId) {
                                             case "image1":
                                                 await this.magnifyImage(img1Buffer, conn);
@@ -323,6 +336,33 @@ class ToyCreationManager{
                                                 break;
                                             case "image4":
                                                 await this.magnifyImage(img4Buffer, conn);
+                                                break;
+                                            case "regenerate":
+                                                await this.interaction.webhook.editMessage(message.id,
+                                                    {
+                                                        ephemeral: true,
+                                                        fetchReply: true,
+                                                        embeds: [
+                                                            new EmbedBuilder()
+                                                                .setTitle("Generation")
+                                                                .setColor("Blue")
+                                                                .setImage(img)
+                                                                .addFields(
+                                                                    stuff
+                                                                )
+                                                                .setFooter(
+                                                                    {
+                                                                        text: this.interaction.guild.name,
+                                                                        iconURL: this.interaction.guild.iconURL()
+                                                                    }
+                                                                )
+                                                                .setTimestamp()
+                                                        ],
+                                                        components: []
+                                                    }
+                                                ).then().catch(console.error);
+
+                                                await this.summerUp(data, true);
                                                 break;
                                         }
                                     }
@@ -337,92 +377,92 @@ class ToyCreationManager{
         }).catch(console.error);
     }
 
+    async pickStyle(style, data) {
+        return await new Promise(async (resolve) => {
+            let image;
+            switch (style[0]) {
+                case "headz":
+                    image = fs.readFileSync(__dirname + "/../assets/images/styles/headz.png");
+
+                    sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
+                    sdk.postModelsModelidInferences({
+                        parameters: {
+                            prompt: `Minimal Abstract Art Toy, ${data.color1}, ${data.color2}, ${data.words}`,
+                            type: 'img2img',
+                            image: "data:image/png;base64," + image.toString("base64"),
+                            strength: 0.75,
+                            guidance: 7,
+                            numInferenceSteps: 30,
+                            numSamples: 4,
+                            width: 512,
+                            height: 512
+                        }
+                    },
+                        {modelId: 'caVLgv5XSlOF7vQTYQGwfg'}
+                    )
+                    .then(async ({ data }) => {
+                        await resolve(data);
+                    })
+                    .catch(err => {
+                        console.error(err)
+                        resolve(err);
+                    });
+                case "flowaii":
+                    sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
+                    sdk.postModelsModelidInferences({
+                            parameters: {
+                                prompt: `Minimal Abstract Art Toy, ${data.color1}, ${data.color2}, ${data.words}`,
+                                type: 'txt2img',
+                                guidance: 4.5,
+                                numInferenceSteps: 30,
+                                numSamples: 4,
+                                width: 512,
+                                height: 512
+                            }
+                        },
+                        {modelId: 'caVLgv5XSlOF7vQTYQGwfg'}
+                    )
+                        .then(async ({ data }) => {
+                            await resolve(data);
+                        })
+                        .catch(err => {
+                            console.error(err)
+                            resolve(err);
+                        });
+                    break;
+                case "shadow":
+                    image = fs.readFileSync(__dirname + "/../assets/images/styles/headz.png");
+
+                    sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
+                    sdk.postModelsModelidInferences({
+                            parameters: {
+                                prompt: `Minimal Abstract Art Toy, ${data.color1}, ${data.color2}, ${data.words}`,
+                                type: 'img2img',
+                                image: "data:image/png;base64," + image.toString("base64"),
+                                strength: 0.75,
+                                guidance: 7,
+                                numInferenceSteps: 30,
+                                numSamples: 4,
+                                width: 512,
+                                height: 512
+                            }
+                        },
+                        {modelId: 'caVLgv5XSlOF7vQTYQGwfg'}
+                    )
+                        .then(async ({ data }) => {
+                            await resolve(data);
+                        })
+                        .catch(err => {
+                            console.error(err)
+                            resolve(err);
+                        });
+                    break;
+            }
+        });
+
+    }
+
     async magnifyImage(img, conn) {
-        let attachment = new AttachmentBuilder(img, {name: "generation.png"});
-        await this.interaction.followUp(
-            {
-                ephemeral: true,
-                embeds: [
-                    new EmbedBuilder()
-                        .setImage("attachment://generation.png")
-                        .setColor("Blue")
-                        .setDescription("Wonderful! Now you can go ahead and purchase your toy and nft! Hit the payment method you'd like to use.")
-                ],
-                files: [
-                    attachment
-                ],
-                components: [
-                    new ActionRowBuilder()
-                        .addComponents(
-                            new ButtonBuilder()
-                                .setStyle("Primary")
-                                .setLabel("Paypal")
-                                .setEmoji("<:paypal:1077766385297522749>")
-                                .setCustomId("paypal")
-                        )
-                ]
-            }
-        ).then(
-            async (message) => {
-                const filter = (i) => i.user.id === this.interaction.user.id;
-
-                await this.interaction.channel.awaitMessageComponent({filter, time: 120_000})
-                    .then(
-                        async (collected) => {
-                            switch (collected.customId) {
-                                case "paypal":
-                                    await this.paypalPayment(conn);
-                                    break;
-                            }
-                        }
-                    )
-                    .catch(console.error);
-            }
-        ).catch(console.error);
-    }
-
-    async magnifyImage2(conn) {
-        //let attachment = new AttachmentBuilder(img, {name: "generation.png"});
-        await this.interaction.editReply(
-            {
-                ephemeral: true,
-                embeds: [
-                    new EmbedBuilder()
-                        .setImage("https://media.discordapp.net/ephemeral-attachments/1077392709913948260/1078481239679451186/generation.png?width=675&height=675")
-                        .setColor("Blue")
-                        .setDescription("Wonderful! Now you can go ahead and purchase your toy and nft! Hit the payment method you'd like to use.")
-                ],
-                components: [
-                    new ActionRowBuilder()
-                        .addComponents(
-                            new ButtonBuilder()
-                                .setStyle("Primary")
-                                .setLabel("Paypal")
-                                .setEmoji("<:paypal:1077766385297522749>")
-                                .setCustomId("paypal")
-                        )
-                ]
-            }
-        ).then(
-            async (message) => {
-                const filter = (i) => i.user.id === this.interaction.user.id;
-
-                await this.interaction.channel.awaitMessageComponent({filter, time: 120_000})
-                    .then(
-                        async (collected) => {
-                            switch (collected.customId) {
-                                case "paypal":
-                                    await this.paypalPayment(conn);
-                                    break;
-                            }
-                        }
-                    )
-                    .catch(console.error);
-            }
-        ).catch(console.error);
-    }
-
-    async paypalPayment(conn) {
         let access_token = await new Promise(async (resolve) => {
             const clientId = this.config.paypal.client_id;
             const clientSecret = this.config.paypal.client_secret;
@@ -443,12 +483,8 @@ class ToyCreationManager{
                 .then(res => {
                     resolve(res.json())
                 })
-                .then(data => console.log(data))
                 .catch(err => console.error(err));
         });
-
-        console.log(access_token)
-
 
         let order = await new Promise(async (resolve) => {
             const data = {
@@ -479,8 +515,8 @@ class ToyCreationManager{
                     }
                 ],
                 "application_context": {
-                    "return_url": "https://example.com/return",
-                    "cancel_url": "https://example.com/cancel"
+                    "return_url": "https://discord.gg/Q54G4xTW",
+                    "cancel_url": "https://discord.gg/Q54G4xTW"
                 }
             }
 
@@ -492,17 +528,459 @@ class ToyCreationManager{
                 },
                 body: JSON.stringify(data)
             })
-                .then(res => {
-                    resolve(res.json())
+                .then(async res => {
+                    await resolve([await res.json(), data])
                 })
-                .then(data => console.log(data))
                 .catch(err => console.error(err));
         });
 
-        console.log(order)
+        let attachment = new AttachmentBuilder(img, {name: "generation.png"});
+        await this.interaction.followUp(
+            {
+                ephemeral: true,
+                embeds: [
+                    new EmbedBuilder()
+                        .setImage("attachment://generation.png")
+                        .setColor("Blue")
+                        .addFields(
+                            {
+                                name: `Order ID`,
+                                value: `${order[0].id}`,
+                                inline: true
+                            },
+                            {
+                                name: `Name`,
+                                value: `${order[1].purchase_units[0].items[0].name}`,
+                                inline: true
+                            },
+                            {
+                                name: `Description`,
+                                value: `${order[1].purchase_units[0].items[0].description}`,
+                                inline: false
+                            },
+                            {
+                                name: `Quantity`,
+                                value: `1`,
+                                inline: true
+                            },
+                            {
+                                name: `Total`,
+                                value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
+                                inline: true
+                            },
+                            {
+                                name: "Status",
+                                value: `Waiting 🟠`,
+                                inline: true
+                            }
+                        )
+                        .setDescription("> Wonderful! Now you can go ahead and purchase your toy and nft! Hit the payment method you'd like to use.")
+                        .setFooter(
+                            {
+                                text: this.interaction.guild.name,
+                                iconURL: this.interaction.guild.iconURL()
+                            }
+                        )
+                        .setTimestamp()
+                ],
+                components: [
+                    new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setStyle("Link")
+                                .setLabel("Paypal")
+                                .setEmoji("<:paypal:1077766385297522749>")
+                                .setURL(order[0].links[1].href)
+                        )
+                ],
+                files: [
+                    attachment
+                ]
+            }
+        ).then(async (message) => {
+            let orderStatus = "Waiting";
+
+            while (orderStatus !== "CREATED") {
+                await wait(5000);
+
+                let status = await new Promise(async (resolve) => {
+                    const orderId = order[0].id;
+                    const accessToken = access_token.access_token;
+                    const apiUrl = `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}`;
+
+                    await fetch(apiUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        resolve(response.json());
+                    })
+                    .catch(error => console.error(error));
+                })
 
 
-        
+                if(status.status === "APPROVED") {
+                    orderStatus = "APPROVED";
+
+                    await this.interaction.webhook.editMessage(message.id,{
+                        embeds: [
+                            new EmbedBuilder()
+                                .setImage("attachment://generation.png")
+                                .setColor("Green")
+                                .addFields(
+                                    {
+                                        name: `Order ID`,
+                                        value: `${order[0].id}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `Name`,
+                                        value: `${order[1].purchase_units[0].items[0].name}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `Description`,
+                                        value: `${order[1].purchase_units[0].items[0].description}`,
+                                        inline: false
+                                    },
+                                    {
+                                        name: `Quantity`,
+                                        value: `1`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: `Total`,
+                                        value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: "Status",
+                                        value: `Approved 🟢`,
+                                        inline: true
+                                    }
+                                )
+                                .setFooter(
+                                    {
+                                        text: this.interaction.guild.name,
+                                        iconURL: this.interaction.guild.iconURL()
+                                    }
+                                )
+                                .setTimestamp()
+                                .setDescription("> Congratulation! Now hit mint in order to get your nft.")
+                        ],
+                        components: [
+                            new ActionRowBuilder()
+                                .addComponents(
+                                    new ButtonBuilder()
+                                        .setLabel("Mint")
+                                        .setStyle("Success")
+                                        .setCustomId("mint")
+                                )
+                        ]
+                    }).then(
+                        async (collected) => {
+                            const filter = (i) => i.user.id === this.interaction.user.id;
+
+                            await this.interaction.channel.awaitMessageComponent()
+                                .then(
+                                    async (collected) => {
+                                        switch (collected.customId) {
+                                            case "mint":
+                                                await collected.deferUpdate().then().catch(console.error);
+                                                await this.nftManagment(conn);
+                                                break;
+                                        }
+                                    }
+                                )
+                                .catch(console.error);
+                        }
+                    ).catch(
+                        (err) => {
+
+                        }
+                    )
+
+                }
+            }
+        }).catch(console.error);
+    }
+
+    async nftManagment(conn, nftData) {
+        const endpoint = 'https://graphql.api.staging.niftory.com/';
+        const api_key = this.config.niftory.api_key;
+        const client_secret = this.config.niftory.client_secret;
+
+        let createContent = await new Promise(async (resolve) => {
+            const query = `
+                mutation UploadNFTContent($name: String!, $description: String) {
+                    uploadNFTContent(name: $name, description: $description) {
+                        id
+                        files {
+                            id
+                            state
+                            name
+                            url
+                        }
+                        poster {
+                            id
+                            state
+                            url
+                        }
+                    }
+                }
+            `;
+
+            const headers = {
+                'X-Niftory-API-Key': api_key,
+                'X-Niftory-Client-Secret': client_secret
+            };
+
+            let variables = {
+                "name": "generation",
+                "description": "this is the generated toy.",
+            }
+
+            await request(endpoint, query, variables, headers).then(async (data) => {
+                await resolve(data.uploadNFTContent);
+            });
+        });
+
+        let contentId = createContent.id;
+
+        let image = await new Promise(async (resolve) => {
+            let file = fs.readFileSync("src/assets/images/generation.png");
+            let poster = fs.readFileSync("src/assets/images/flowaii.png")
+
+            await axios.put(createContent.files[0].url, file, {headers: {"Content-Type": ""}})
+                .then()
+                .catch(console.error);
+
+            await axios.put(createContent.poster.url, poster, {headers: {"Content-Type": ""}})
+                .then()
+                .catch(console.error);
+
+            resolve();
+        });
+
+
+        let nftModel = await new Promise(async (resolve) => {
+            const query = `
+                mutation CreateModel($setId: ID!, $data: NFTModelCreateInput!) {
+                    createNFTModel(setId: $setId, data: $data) {
+                        id
+                        quantity
+                        title
+                        attributes
+                    }
+                }            
+            `;
+
+            const headers = {
+                'X-Niftory-API-Key': api_key,
+                'X-Niftory-Client-Secret': client_secret
+            };
+
+            let LocalNfts = await this.db.query(conn, `SELECT * FROM dc_minted_nfts`);
+
+            const variables = {
+                "setId": "1b039a39-9008-45c9-b11f-e5827befb642",
+                "data": {
+                    "title": `Flowaii - ${LocalNfts.length+1}`,
+                    "description": "This NFT represents an exclusive licence to manufacture this Floawaii art toy",
+                    "quantity": 1,
+                    "contentId": contentId,
+                    "metadata": {
+                        "rarity": "RARE",
+                        "number": 1,
+                        "Style": nftData.style,
+                        "Words": nftData.words,
+                        "Primary_Color": nftData.color1,
+                        "Secondary_Color": nftData.color2,
+                        "Artist": nftData.artist,
+                    }
+                }
+            }
+
+            await request(endpoint, query, variables, headers).then(async (data) => {
+                await resolve(data);
+            });
+        });
+
+        let mintNFT = await new Promise(async (resolve) => {
+            const query = `
+                mutation mintNFTModel($id: ID!, $quantity: PositiveInt) {
+                    mintNFTModel(id: $id, quantity: $quantity) {
+                        id
+                        quantity
+                        quantityMinted
+                        nfts {
+                            blockchainState
+                            id
+                            blockchainId
+                            serialNumber
+                            transactions {
+                                blockchain
+                                hash
+                                name
+                            }
+                        }
+                    }
+                }
+            `;
+
+            const headers = {
+                'X-Niftory-API-Key': api_key,
+                'X-Niftory-Client-Secret': client_secret
+            };
+
+            const variables = {
+                "id": nftModel.createNFTModel.id,
+                "quantity": 1
+            }
+
+            await request(endpoint, query, variables, headers).then(async (data) => {
+                await resolve(data);
+            });
+        });
+
+        let mintedNft = await new Promise(async (resolve) => {
+            const query = `
+                query nftModel($id: ID!) {
+                  nftModel(id: $id) {
+                      id
+                      quantity
+                      quantityMinted
+                      nfts {
+                          blockchainState
+                          id
+                          blockchainId
+                          serialNumber
+                          transactions {
+                              blockchain
+                              hash
+                              name
+                          }
+                      }
+                  }
+                }
+            `
+
+            const headers = {
+                'X-Niftory-API-Key': api_key,
+                'X-Niftory-Client-Secret': client_secret
+            };
+
+            const variables = {
+                "id": mintNFT.mintNFTModel.id
+            }
+
+
+            let isMinted = false
+            while(!isMinted) {
+                await wait(3000);
+                await request(endpoint, query, variables, headers).then(async (data) => {
+                    if(data.nftModel.nfts[0].blockchainState === "MINTED") {
+                        isMinted = true;
+                        await resolve(data);
+                    }
+                });
+            }
+        });
+
+        let wallet = await new Promise(async (resolve) => {
+            const query = `
+                mutation CreateWallet {
+                    createNiftoryWallet {
+                        id
+                        address
+                        state
+                    }
+                }
+            `;
+
+            const headers = {
+                'X-Niftory-API-Key': api_key,
+                'X-Niftory-Client-Secret': client_secret
+            };
+
+            const variables = {};
+
+            await request(endpoint, query, variables, headers).then(async (data) => {
+                await resolve(data);
+            });
+        });
+
+        let retrieveWallet = await new Promise(async (resolve) => {
+            const query = `
+                query WalletById($id: ID!) {
+                    walletById(id: $id) {
+                        id
+                        address
+                        state
+                    }
+                }
+            `;
+
+            const headers = {
+                'X-Niftory-API-Key': api_key,
+                'X-Niftory-Client-Secret': client_secret
+            };
+
+            const variables = {
+                id: wallet.createNiftoryWallet.id
+            };
+
+
+            let isWalletCreated = false;
+
+            while (!isWalletCreated) {
+                await wait(3000)
+                await request(endpoint, query, variables, headers).then(async (data) => {
+                    if(data.walletById.state === "READY") {
+                        isWalletCreated = true;
+                        await resolve(data);
+                    }
+                });
+            }
+        });
+
+        let transferNft = await new Promise(async (resolve) => {
+            const query = `
+                mutation Transfer($address: String, $nftModelId: ID) {
+                    transfer(address: $address, nftModelId: $nftModelId) {
+                        id
+                        status
+                        model {
+                            id
+                            title
+                        }
+                    }
+                }
+            `;
+
+            const headers = {
+                'X-Niftory-API-Key': api_key,
+                'X-Niftory-Client-Secret': client_secret
+            };
+
+            const variables = {
+                "nftModelId": mintNFT.mintNFTModel.id,
+                "address": retrieveWallet.walletById.address,
+            };
+
+
+            await request(endpoint, query, variables, headers).then(async (data) => {
+                await resolve(data);
+            });
+        });
+
+
     }
 
     async checkCreationStatus() {
@@ -547,7 +1025,7 @@ class ToyCreationManager{
         });
     }
 
-    async summerUp(Data) {
+    async summerUp(Data, regeneration) {
         let data = Data;
 
         let proceed = false;
@@ -651,13 +1129,14 @@ class ToyCreationManager{
                                 await collected.deferUpdate().then().catch(console.error);
                                 await collected.deleteReply().then().catch(console.error);
 
+
                                 switch (collected.customId) {
                                     case "style":
                                         data.style = await this.selectStyle();
                                         resolve();
                                         break;
                                     case "color1":
-                                        data.color1 = await this.selectStyle("first");
+                                        data.color1 = await this.selectColor("first");
                                         resolve();
                                         break;
                                     case "color2":
@@ -669,7 +1148,7 @@ class ToyCreationManager{
                                         resolve();
                                         break;
                                     case "generate":
-                                        await this.initNewGeneration(data);
+                                        await this.initNewGeneration(data, regeneration);
                                         resolve(proceed = true);
                                         break;
                                 }
@@ -690,20 +1169,12 @@ class ToyCreationManager{
         return await new Promise(async (resolve) => {
             let styles = [
                 {
-                    label: "Kawaii",
-                    value: "kawaii"
+                    label: "Headz",
+                    value: "headz"
                 },
                 {
-                    label: "Abstract",
-                    value: "abstract"
-                },
-                {
-                    label: "Fantasy",
-                    value: "fantasy"
-                },
-                {
-                    label: "Wildcard",
-                    value: "wildcard"
+                    label: "Flowaii",
+                    value: "flowaii"
                 }
             ]
 
@@ -758,36 +1229,218 @@ class ToyCreationManager{
 
     async selectColor(pos) {
         return await new Promise(async (resolve) => {
-            let colors = [
-                {
-                    label: "Blue",
-                    value: "blue"
-                },
-                {
-                    label: "Red",
-                    value: "red"
-                },
-                {
-                    label: "Yellow",
-                    value: "yellow"
-                },
-                {
-                    label: "Pink",
-                    value: "pink"
-                },
-                {
-                    label: "Black",
-                    value: "black"
-                },
-                {
-                    label: "Green",
-                    value: "green"
-                },
-                {
-                    label: "White",
-                    value: "white"
-                },
-            ]
+            let colors = [];
+
+            switch (pos) {
+                case "first":
+                    colors = [
+                        {
+                            label: "Red",
+                            value: "(Red)"
+                        },
+                        {
+                            label: "Crimson",
+                            value: "(Crimson)"
+                        },
+                        {
+                            label: "Cherry Red",
+                            value: "(Cherry Red)"
+                        },
+                        {
+                            label: "Scarlet",
+                            value: "(Scarlet)"
+                        },
+                        {
+                            label: "Burnt Sienna",
+                            value: "(Burnt Sienna)"
+                        },
+                        {
+                            label: "Orange",
+                            value: "(Orange)"
+                        },
+                        {
+                            label: "Tangerine",
+                            value: "(Tangerine)"
+                        },
+                        {
+                            label: "Burnt Orange",
+                            value: "(Burnt Orange)"
+                        },
+                        {
+                            label: "Peach",
+                            value: "(Peach)"
+                        },
+                        {
+                            label: "Yellow",
+                            value: "(Yellow)"
+                        },
+                        {
+                            label: "Lemon Yellow",
+                            value: "(Lemon Yellow)"
+                        },
+                        {
+                            label: "Canary Yellow",
+                            value: "(Canary Yellow)"
+                        },
+                        {
+                            label: "Golden Yellow",
+                            value: "(Golden Yellow)"
+                        },
+                        {
+                            label: "Lime Green",
+                            value: "(Lime Green)"
+                        },
+                        {
+                            label: "Forest Green",
+                            value: "(Forest Green)"
+                        },
+                        {
+                            label: "Olive Green",
+                            value: "(Olive Green)"
+                        },
+                        {
+                            label: "Teal",
+                            value: "(Teal)"
+                        },
+                        {
+                            label: "Aqua",
+                            value: "(Aqua)"
+                        },
+                        {
+                            label: "Light Blue",
+                            value: "(Light Blue)"
+                        },
+                        {
+                            label: "Royal Blue",
+                            value: "(Royal Blue)"
+                        },
+                        {
+                            label: "Navy Blue",
+                            value: "(Navy Blue)"
+                        },
+                        {
+                            label: "Lavender",
+                            value: "(Lavender)"
+                        },
+                        {
+                            label: "Violet",
+                            value: "(Violet)"
+                        },
+                        {
+                            label: "Magenta",
+                            value: "(Magenta)"
+                        },
+                        {
+                            label: "Pink",
+                            value: "(Pink)"
+                        }
+                    ];
+                    break;
+                case "second":
+                    colors = [
+                        {
+                            label: "Red",
+                            value: "Red",
+                        },
+                        {
+                            label: "Crimson",
+                            value: "Crimson",
+                        },
+                        {
+                            label: "Cherry Red",
+                            value: "Cherry Red",
+                        },
+                        {
+                            label: "Scarlet",
+                            value: "Scarlet",
+                        },
+                        {
+                            label: "Burnt Sienna",
+                            value: "Burnt Sienna",
+                        },
+                        {
+                            label: "Orange",
+                            value: "Orange",
+                        },
+                        {
+                            label: "Tangerine",
+                            value: "Tangerine",
+                        },
+                        {
+                            label: "Burnt Orange",
+                            value: "Burnt Orange",
+                        },
+                        {
+                            label: "Peach",
+                            value: "Peach",
+                        },
+                        {
+                            label: "Yellow",
+                            value: "Yellow",
+                        },
+                        {
+                            label: "Lemon Yellow",
+                            value: "Lemon Yellow",
+                        },
+                        {
+                            label: "Canary Yellow",
+                            value: "Canary Yellow",
+                        },
+                        {
+                            label: "Golden Yellow",
+                            value: "Golden Yellow",
+                        },
+                        {
+                            label: "Lime Green",
+                            value: "Lime Green",
+                        },
+                        {
+                            label: "Forest Green",
+                            value: "Forest Green",
+                        },
+                        {
+                            label: "Olive Green",
+                            value: "Olive Green",
+                        },
+                        {
+                            label: "Teal",
+                            value: "Teal",
+                        },
+                        {
+                            label: "Aqua",
+                            value: "Aqua",
+                        },
+                        {
+                            label: "Light Blue",
+                            value: "Light Blue",
+                        },
+                        {
+                            label: "Royal Blue",
+                            value: "Royal Blue",
+                        },
+                        {
+                            label: "Navy Blue",
+                            value: "Navy Blue",
+                        },
+                        {
+                            label: "Lavender",
+                            value: "Lavender",
+                        },
+                        {
+                            label: "Violet",
+                            value: "Violet",
+                        },
+                        {
+                            label: "Magenta",
+                            value: "Magenta",
+                        },
+                        {
+                            label: "Pink",
+                            value: "Pink",
+                        }
+                    ]
+                    break;
+            }
 
             let embed =
                 new EmbedBuilder()
@@ -902,7 +1555,14 @@ class ToyCreationManager{
                                                 let input = submission.fields.getTextInputValue("inputtedWords");
                                                 input = input.slice().split(/ /);
 
-                                                if(input.length === 2 || input.length === 1) {
+                                                let words = [];
+                                                for(const e of input) {
+                                                    if(e !== "") {
+                                                        words.push(e);
+                                                    }
+                                                }
+
+                                                if(words.length === 2 || words.length === 1) {
                                                     await resolve2(passed = false)
                                                     await collected.deleteReply().then().catch(console.error);
                                                     await resolve(submission.fields.getTextInputValue("inputtedWords"))
@@ -995,3 +1655,4 @@ class ToyCreationManager{
 module.exports = {
     ToyCreationManager
 }
+
