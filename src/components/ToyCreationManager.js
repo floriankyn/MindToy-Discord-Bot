@@ -19,8 +19,6 @@ const url = require("url")
 const request2 = require('request');
 const {raw} = require("mysql2");
 
-console.log(__dirname + "/assets/images/styles/headz.png")
-
 class ToyCreationManager{
     constructor(interaction=null, client=null, config=null) {
         this.interaction = interaction;
@@ -50,48 +48,25 @@ class ToyCreationManager{
     }
 
     async on() {
-        if(true) {//!Initiations.has(this.interaction.user.id)) {
+        await this.interaction.deferReply({ephemeral: true}).then().catch(console.error);
+
+        if(!Initiations.has(this.interaction.user.id)) {
             Initiations.add(this.interaction.user.id);
             switch (this.interaction.commandName) {
                 case "toy":
-                    await this.interaction.deferReply({ephemeral: true}).then().catch(console.error);
-
                     if(await this.checkCreationStatus()) {
-                        //await this.magnifyImage2(null)
                         await this.gatherUserInput();
-                        /*
-                        this.db.connection().getConnection(async (err, conn) => {
-                            if(err) throw err;
-
-                            let LOCALDATA = {
-                                style: "kawaii",
-                                words: "fluffy volcano",
-                                artist: this.interaction.user.username,
-                                color1: "red",
-                                color2: "black"
-                            }
-
-                            await this.nftManagment(conn, LOCALDATA);
-
-                            this.db.connection().releaseConnection(conn);
-                        });
-                         */
-
                     } else {
                         await this.backToPreviousGeneration();
                     }
                     break;
             }
         } else {
-            await this.displayErrorMessage(`${this.interaction.user}, Please finish your toy before trying to generate a new one.`);
+            await this.displayErrorMessage(2);
         }
     }
 
     async backToPreviousGeneration() {
-
-    }
-
-    async fetchCollection() {
 
     }
 
@@ -128,7 +103,6 @@ class ToyCreationManager{
                 inline: true
             },
         ]
-
         let embed =
             new EmbedBuilder()
                 .setTitle("Generation")
@@ -217,7 +191,6 @@ class ToyCreationManager{
                     img = "attachment://generation.png"
                 }
 
-
                 await this.interaction.webhook.editMessage(interactionMessage.id,
                     {
                         ephemeral: true,
@@ -242,7 +215,6 @@ class ToyCreationManager{
                         files: file
                     }
                 ).then().catch(console.error);
-
 
                 if(generation.inference.progress === 1) {
                     imageGenerationStatus = true;
@@ -322,20 +294,43 @@ class ToyCreationManager{
                             await this.interaction.channel.awaitMessageComponent({filter})
                                 .then(
                                     async (collected) => {
-                                        await collected.deferUpdate().then().catch(console.error);
+                                        await this.interaction.webhook.editMessage(interactionMessage.id,
+                                            {
+                                                ephemeral: true,
+                                                fetchReply: true,
+                                                embeds: [
+                                                    new EmbedBuilder()
+                                                        .setTitle("Generation")
+                                                        .setColor("Blue")
+                                                        .setImage(img)
+                                                        .addFields(
+                                                            stuff
+                                                        )
+                                                        .setFooter(
+                                                            {
+                                                                text: this.interaction.guild.name,
+                                                                iconURL: this.interaction.guild.iconURL()
+                                                            }
+                                                        )
+                                                        .setTimestamp()
+                                                ],
+                                                files: file,
+                                                components: []
+                                            }
+                                        ).then().catch(console.error);
 
                                         switch (collected.customId) {
                                             case "image1":
-                                                await this.magnifyImage(img1Buffer, conn);
+                                                await this.magnifyImage(img1Buffer, conn, data);
                                                 break;
                                             case "image2":
-                                                await this.magnifyImage(img2Buffer, conn);
+                                                await this.magnifyImage(img2Buffer, conn, data);
                                                 break;
                                             case "image3":
-                                                await this.magnifyImage(img3Buffer, conn);
+                                                await this.magnifyImage(img3Buffer, conn, data);
                                                 break;
                                             case "image4":
-                                                await this.magnifyImage(img4Buffer, conn);
+                                                await this.magnifyImage(img4Buffer, conn, data);
                                                 break;
                                             case "regenerate":
                                                 await this.interaction.webhook.editMessage(message.id,
@@ -367,7 +362,9 @@ class ToyCreationManager{
                                         }
                                     }
                                 )
-                                .catch(console.error);
+                                .catch(async (err) => {
+                                    await this.endCollector(1);
+                                });
 
                             this.db.connection().releaseConnection(conn);
                         })
@@ -407,6 +404,7 @@ class ToyCreationManager{
                         console.error(err)
                         resolve(err);
                     });
+                    break;
                 case "flowaii":
                     sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
                     sdk.postModelsModelidInferences({
@@ -462,7 +460,8 @@ class ToyCreationManager{
 
     }
 
-    async magnifyImage(img, conn) {
+    async magnifyImage(img, conn, data) {
+        Initiations.delete(this.interaction.user.id);
         let access_token = await new Promise(async (resolve) => {
             const clientId = this.config.paypal.client_id;
             const clientSecret = this.config.paypal.client_secret;
@@ -494,7 +493,7 @@ class ToyCreationManager{
                         "items": [
                             {
                                 "name": "Mind Toy#001",
-                                "description": "45mm  Style: Kawaii Fluffy Volcano. Delivered to you within 3/4 weeks internationally + Flow nft to.",
+                                "description": "55mm Delivered to you within 3/4 weeks internationally + Flow nft.",
                                 "quantity": "1",
                                 "unit_amount": {
                                     "currency_code": "USD",
@@ -601,7 +600,7 @@ class ToyCreationManager{
             let orderStatus = "Waiting";
 
             while (orderStatus !== "CREATED") {
-                await wait(5000);
+                await wait(2000);
 
                 let status = await new Promise(async (resolve) => {
                     const orderId = order[0].id;
@@ -629,6 +628,7 @@ class ToyCreationManager{
                     orderStatus = "APPROVED";
 
                     await this.interaction.webhook.editMessage(message.id,{
+                        ephemeral: true,
                         embeds: [
                             new EmbedBuilder()
                                 .setImage("attachment://generation.png")
@@ -687,13 +687,64 @@ class ToyCreationManager{
                         async (collected) => {
                             const filter = (i) => i.user.id === this.interaction.user.id;
 
-                            await this.interaction.channel.awaitMessageComponent()
+                            await this.interaction.channel.awaitMessageComponent({filter})
                                 .then(
                                     async (collected) => {
+
+                                        await this.interaction.webhook.editMessage(message.id,{
+                                            ephemeral: true,
+                                            embeds: [
+                                                new EmbedBuilder()
+                                                    .setImage("attachment://generation.png")
+                                                    .setColor("Green")
+                                                    .addFields(
+                                                        {
+                                                            name: `Order ID`,
+                                                            value: `${order[0].id}`,
+                                                            inline: true
+                                                        },
+                                                        {
+                                                            name: `Name`,
+                                                            value: `${order[1].purchase_units[0].items[0].name}`,
+                                                            inline: true
+                                                        },
+                                                        {
+                                                            name: `Description`,
+                                                            value: `${order[1].purchase_units[0].items[0].description}`,
+                                                            inline: false
+                                                        },
+                                                        {
+                                                            name: `Quantity`,
+                                                            value: `1`,
+                                                            inline: true
+                                                        },
+                                                        {
+                                                            name: `Total`,
+                                                            value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
+                                                            inline: true
+                                                        },
+                                                        {
+                                                            name: "Status",
+                                                            value: `Approved 🟢`,
+                                                            inline: true
+                                                        }
+                                                    )
+                                                    .setFooter(
+                                                        {
+                                                            text: this.interaction.guild.name,
+                                                            iconURL: this.interaction.guild.iconURL()
+                                                        }
+                                                    )
+                                                    .setTimestamp()
+                                                    .setDescription("> Congratulation! Now hit mint in order to get your nft.")
+                                            ],
+                                            components: []
+                                        }).then().catch(console.error);
+
                                         switch (collected.customId) {
                                             case "mint":
                                                 await collected.deferUpdate().then().catch(console.error);
-                                                await this.nftManagment(conn);
+                                                await this.nftManagment(conn, collected, data, attachment, img);
                                                 break;
                                         }
                                     }
@@ -711,115 +762,295 @@ class ToyCreationManager{
         }).catch(console.error);
     }
 
-    async nftManagment(conn, nftData) {
-        const endpoint = 'https://graphql.api.staging.niftory.com/';
-        const api_key = this.config.niftory.api_key;
-        const client_secret = this.config.niftory.client_secret;
-
-        let createContent = await new Promise(async (resolve) => {
-            const query = `
-                mutation UploadNFTContent($name: String!, $description: String) {
-                    uploadNFTContent(name: $name, description: $description) {
-                        id
-                        files {
-                            id
-                            state
-                            name
-                            url
-                        }
-                        poster {
-                            id
-                            state
-                            url
-                        }
-                    }
-                }
-            `;
-
-            const headers = {
-                'X-Niftory-API-Key': api_key,
-                'X-Niftory-Client-Secret': client_secret
-            };
-
-            let variables = {
-                "name": "generation",
-                "description": "this is the generated toy.",
+    async nftManagment(conn, collected, nftData, attachment, img) {
+        await this.interaction.followUp(
+            {
+                ephemeral: true,
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle("Minting")
+                        .setColor("Blue")
+                        .setDescription("We are minting your nft! Please wait.")
+                        .setImage("attachment://generation.png")
+                        .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                        .setTimestamp()
+                ],
+                components: [],
+                files: [
+                    attachment
+                ]
             }
+        ).then(
+            async (message) => {
+                const endpoint = 'https://graphql.api.staging.niftory.com/';
+                const api_key = this.config.niftory.api_key;
+                const client_secret = this.config.niftory.client_secret;
 
-            await request(endpoint, query, variables, headers).then(async (data) => {
-                await resolve(data.uploadNFTContent);
-            });
-        });
+                let createContent = await new Promise(async (resolve) => {
+                    const query = `
+                        mutation UploadNFTContent($name: String!, $description: String) {
+                            uploadNFTContent(name: $name, description: $description) {
+                                id
+                                files {
+                                    id
+                                    state
+                                    name
+                                    url
+                                }
+                                poster {
+                                    id
+                                    state
+                                    url
+                                }
+                            }
+                        }
+                    `;
 
-        let contentId = createContent.id;
+                    const headers = {
+                        'X-Niftory-API-Key': api_key,
+                        'X-Niftory-Client-Secret': client_secret
+                    };
 
-        let image = await new Promise(async (resolve) => {
-            let file = fs.readFileSync("src/assets/images/generation.png");
-            let poster = fs.readFileSync("src/assets/images/flowaii.png")
-
-            await axios.put(createContent.files[0].url, file, {headers: {"Content-Type": ""}})
-                .then()
-                .catch(console.error);
-
-            await axios.put(createContent.poster.url, poster, {headers: {"Content-Type": ""}})
-                .then()
-                .catch(console.error);
-
-            resolve();
-        });
-
-
-        let nftModel = await new Promise(async (resolve) => {
-            const query = `
-                mutation CreateModel($setId: ID!, $data: NFTModelCreateInput!) {
-                    createNFTModel(setId: $setId, data: $data) {
-                        id
-                        quantity
-                        title
-                        attributes
+                    let variables = {
+                        "name": "generation",
+                        "description": "this is the generated toy.",
                     }
-                }            
-            `;
 
-            const headers = {
-                'X-Niftory-API-Key': api_key,
-                'X-Niftory-Client-Secret': client_secret
-            };
+                    await request(endpoint, query, variables, headers).then(async (data) => {
+                        await resolve(data.uploadNFTContent);
+                    });
+                });
 
-            let LocalNfts = await this.db.query(conn, `SELECT * FROM dc_minted_nfts`);
+                let contentId = createContent.id;
 
-            const variables = {
-                "setId": "1b039a39-9008-45c9-b11f-e5827befb642",
-                "data": {
-                    "title": `Flowaii - ${LocalNfts.length+1}`,
-                    "description": "This NFT represents an exclusive licence to manufacture this Floawaii art toy",
-                    "quantity": 1,
-                    "contentId": contentId,
-                    "metadata": {
-                        "rarity": "RARE",
-                        "number": 1,
-                        "Style": nftData.style,
-                        "Words": nftData.words,
-                        "Primary_Color": nftData.color1,
-                        "Secondary_Color": nftData.color2,
-                        "Artist": nftData.artist,
+                let image = await new Promise(async (resolve) => {
+                    let file = img;
+                    let poster = fs.readFileSync("src/assets/images/nfts/flowaii.png")
+
+                    await axios.put(createContent.files[0].url, file, {headers: {"Content-Type": ""}})
+                        .then()
+                        .catch(console.error);
+
+                    await axios.put(createContent.poster.url, poster, {headers: {"Content-Type": ""}})
+                        .then()
+                        .catch(console.error);
+
+                    resolve();
+                });
+
+
+                let nftModel = await new Promise(async (resolve) => {
+                    const query = `
+                        mutation CreateModel($setId: ID!, $data: NFTModelCreateInput!) {
+                            createNFTModel(setId: $setId, data: $data) {
+                                id
+                                quantity
+                                title
+                                attributes
+                            }
+                        }            
+                    `;
+
+                    const headers = {
+                        'X-Niftory-API-Key': api_key,
+                        'X-Niftory-Client-Secret': client_secret
+                    };
+
+                    const variables = {
+                        "setId": "1b039a39-9008-45c9-b11f-e5827befb642",
+                        "data": {
+                            "title": `Flowaii`,
+                            "description": "This NFT represents an exclusive licence to manufacture this Floawaii art toy",
+                            "quantity": 1,
+                            "contentId": contentId,
+                            "metadata": {
+                                "rarity": "RARE",
+                                "number": 1,
+                                "Style": nftData.style,
+                                "Words": nftData.words,
+                                "Primary_Color": nftData.color1,
+                                "Secondary_Color": nftData.color2,
+                                "Artist": nftData.artist,
+                            }
+                        }
                     }
-                }
-            }
 
-            await request(endpoint, query, variables, headers).then(async (data) => {
-                await resolve(data);
-            });
-        });
+                    await request(endpoint, query, variables, headers).then(async (data) => {
+                        await resolve(data);
+                    });
+                });
 
-        let mintNFT = await new Promise(async (resolve) => {
-            const query = `
-                mutation mintNFTModel($id: ID!, $quantity: PositiveInt) {
-                    mintNFTModel(id: $id, quantity: $quantity) {
-                        id
-                        quantity
-                        quantityMinted
-                        nfts {
+                let mintNFT = await new Promise(async (resolve) => {
+                    const query = `
+                        mutation mintNFTModel($id: ID!, $quantity: PositiveInt) {
+                            mintNFTModel(id: $id, quantity: $quantity) {
+                                id
+                                quantity
+                                quantityMinted
+                                nfts {
+                                    blockchainState
+                                    id
+                                    blockchainId
+                                    serialNumber
+                                    transactions {
+                                        blockchain
+                                        hash
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    `;
+
+                    const headers = {
+                        'X-Niftory-API-Key': api_key,
+                        'X-Niftory-Client-Secret': client_secret
+                    };
+
+                    const variables = {
+                        "id": nftModel.createNFTModel.id,
+                        "quantity": 1
+                    }
+
+                    await request(endpoint, query, variables, headers).then(async (data) => {
+                        await resolve(data);
+                    });
+                });
+
+                let mintedNft = await new Promise(async (resolve) => {
+                    const query = `
+                        query nftModel($id: ID!) {
+                          nftModel(id: $id) {
+                              id
+                              quantity
+                              quantityMinted
+                              nfts {
+                                  blockchainState
+                                  id
+                                  blockchainId
+                                  serialNumber
+                                  transactions {
+                                      blockchain
+                                      hash
+                                      name
+                                  }
+                              }
+                          }
+                        }
+                    `
+
+                    const headers = {
+                        'X-Niftory-API-Key': api_key,
+                        'X-Niftory-Client-Secret': client_secret
+                    };
+
+                    const variables = {
+                        "id": mintNFT.mintNFTModel.id
+                    }
+
+
+                    let isMinted = false
+                    while(!isMinted) {
+                        await wait(3000);
+                        await request(endpoint, query, variables, headers).then(async (data) => {
+                            if(data.nftModel.nfts[0].blockchainState === "MINTED") {
+                                isMinted = true;
+                                await resolve(data);
+                            }
+                        });
+                    }
+                });
+
+                let wallet = await new Promise(async (resolve) => {
+                    const query = `
+                        mutation CreateWallet {
+                            createNiftoryWallet {
+                                id
+                                address
+                                state
+                            }
+                        }
+                    `;
+
+                    const headers = {
+                        'X-Niftory-API-Key': api_key,
+                        'X-Niftory-Client-Secret': client_secret
+                    };
+
+                    const variables = {};
+
+                    await request(endpoint, query, variables, headers).then(async (data) => {
+                        await resolve(data);
+                    });
+                });
+
+                let retrieveWallet = await new Promise(async (resolve) => {
+                    const query = `
+                        query WalletById($id: ID!) {
+                            walletById(id: $id) {
+                                id
+                                address
+                                state
+                            }
+                        }
+                    `;
+
+                    const headers = {
+                        'X-Niftory-API-Key': api_key,
+                        'X-Niftory-Client-Secret': client_secret
+                    };
+
+                    const variables = {
+                        id: wallet.createNiftoryWallet.id
+                    };
+
+                    let isWalletCreated = false;
+
+                    while (!isWalletCreated) {
+                        await wait(3000)
+                        await request(endpoint, query, variables, headers).then(async (data) => {
+                            if(data.walletById.state === "READY") {
+                                isWalletCreated = true;
+                                await resolve(data);
+                            }
+                        });
+                    }
+                });
+
+                let transferNft = await new Promise(async (resolve) => {
+                    const query = `
+                        mutation Transfer($address: String, $nftModelId: ID) {
+                            transfer(address: $address, nftModelId: $nftModelId) {
+                                id
+                                status
+                                model {
+                                    id
+                                    title
+                                }
+                            }
+                        }
+                    `;
+
+                    const headers = {
+                        'X-Niftory-API-Key': api_key,
+                        'X-Niftory-Client-Secret': client_secret
+                    };
+
+                    const variables = {
+                        "nftModelId": mintNFT.mintNFTModel.id,
+                        "address": retrieveWallet.walletById.address,
+                    };
+
+
+                    await request(endpoint, query, variables, headers).then(async (data) => {
+                        await resolve(data);
+                    });
+                });
+
+                let mintedNftInfo = await new Promise(async (resolve) => {
+                    const query = `
+                        query nftQuery($id: ID!) {
+                          nft(id: $id) {
                             blockchainState
                             id
                             blockchainId
@@ -829,158 +1060,61 @@ class ToyCreationManager{
                                 hash
                                 name
                             }
-                        }
-                    }
-                }
-            `;
-
-            const headers = {
-                'X-Niftory-API-Key': api_key,
-                'X-Niftory-Client-Secret': client_secret
-            };
-
-            const variables = {
-                "id": nftModel.createNFTModel.id,
-                "quantity": 1
-            }
-
-            await request(endpoint, query, variables, headers).then(async (data) => {
-                await resolve(data);
-            });
-        });
-
-        let mintedNft = await new Promise(async (resolve) => {
-            const query = `
-                query nftModel($id: ID!) {
-                  nftModel(id: $id) {
-                      id
-                      quantity
-                      quantityMinted
-                      nfts {
-                          blockchainState
-                          id
-                          blockchainId
-                          serialNumber
-                          transactions {
-                              blockchain
-                              hash
-                              name
                           }
-                      }
-                  }
-                }
-            `
-
-            const headers = {
-                'X-Niftory-API-Key': api_key,
-                'X-Niftory-Client-Secret': client_secret
-            };
-
-            const variables = {
-                "id": mintNFT.mintNFTModel.id
-            }
-
-
-            let isMinted = false
-            while(!isMinted) {
-                await wait(3000);
-                await request(endpoint, query, variables, headers).then(async (data) => {
-                    if(data.nftModel.nfts[0].blockchainState === "MINTED") {
-                        isMinted = true;
-                        await resolve(data);
-                    }
-                });
-            }
-        });
-
-        let wallet = await new Promise(async (resolve) => {
-            const query = `
-                mutation CreateWallet {
-                    createNiftoryWallet {
-                        id
-                        address
-                        state
-                    }
-                }
-            `;
-
-            const headers = {
-                'X-Niftory-API-Key': api_key,
-                'X-Niftory-Client-Secret': client_secret
-            };
-
-            const variables = {};
-
-            await request(endpoint, query, variables, headers).then(async (data) => {
-                await resolve(data);
-            });
-        });
-
-        let retrieveWallet = await new Promise(async (resolve) => {
-            const query = `
-                query WalletById($id: ID!) {
-                    walletById(id: $id) {
-                        id
-                        address
-                        state
-                    }
-                }
-            `;
-
-            const headers = {
-                'X-Niftory-API-Key': api_key,
-                'X-Niftory-Client-Secret': client_secret
-            };
-
-            const variables = {
-                id: wallet.createNiftoryWallet.id
-            };
-
-
-            let isWalletCreated = false;
-
-            while (!isWalletCreated) {
-                await wait(3000)
-                await request(endpoint, query, variables, headers).then(async (data) => {
-                    if(data.walletById.state === "READY") {
-                        isWalletCreated = true;
-                        await resolve(data);
-                    }
-                });
-            }
-        });
-
-        let transferNft = await new Promise(async (resolve) => {
-            const query = `
-                mutation Transfer($address: String, $nftModelId: ID) {
-                    transfer(address: $address, nftModelId: $nftModelId) {
-                        id
-                        status
-                        model {
-                            id
-                            title
                         }
+                    `
+                    const headers = {
+                        'X-Niftory-API-Key': api_key,
+                        'X-Niftory-Client-Secret': client_secret
+                    };
+
+                    const variables = {
+                        id: mintedNft.nftModel.nfts[0].id
+                    };
+
+                    await request(endpoint, query, variables, headers).then(async (data) => {
+                        await resolve(data);
+                    });
+                });
+
+                await this.interaction.webhook.editMessage(message.id,
+                    {
+                        embeds: [
+                            new EmbedBuilder()
+                                .setTitle("Minted")
+                                .setURL(`https://testnet.flowscan.org/account/${retrieveWallet.walletById.address}`)
+                                .setColor("Green")
+                                .setDescription("Your nft has been successfully minted! You will be able to withdraw the nft soon. We are working on it!")
+                                .addFields(
+                                    {
+                                        name: "Nft Viewer",
+                                        value: `[Click Here](https://testnet.flowview.app/account/${retrieveWallet.walletById.address}/collection)`,
+                                        inline: false
+                                    },
+                                    {
+                                        name: "Wallet Address",
+                                        value: `${"`" + retrieveWallet.walletById.address + "`"}`,
+                                        inline: false
+                                    },
+                                    {
+                                        name: "Hash",
+                                        value: `${"`" + mintedNftInfo.nft.transactions[0].hash + "`"}`,
+                                        inline: false
+                                    },
+
+                                )
+                                .setImage("attachment://generation.png")
+                                .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                                .setTimestamp()
+                        ],
+                        component: [],
+                        files: [
+                            attachment
+                        ]
                     }
-                }
-            `;
-
-            const headers = {
-                'X-Niftory-API-Key': api_key,
-                'X-Niftory-Client-Secret': client_secret
-            };
-
-            const variables = {
-                "nftModelId": mintNFT.mintNFTModel.id,
-                "address": retrieveWallet.walletById.address,
-            };
-
-
-            await request(endpoint, query, variables, headers).then(async (data) => {
-                await resolve(data);
-            });
-        });
-
-
+                ).then().catch(console.error);
+            }
+        ).catch(console.error);
     }
 
     async checkCreationStatus() {
@@ -999,7 +1133,7 @@ class ToyCreationManager{
                         hasToken = false;
                     }
                 } else {
-                    await this.db.query(conn, `INSERT INTO dc_creation_tokens (user_id, tokens) VALUES ("${this.interaction.user.id}", "5")`);
+                    await this.db.query(conn, `INSERT INTO dc_creation_tokens (user_id, tokens) VALUES ("${this.interaction.user.id}", "1000")`);
                     hasToken = true;
                 }
 
@@ -1594,11 +1728,18 @@ class ToyCreationManager{
     async displayErrorMessage(type) {
         let msg;
 
-        Initiations.delete(this.interaction.user.id);
-
         switch (type) {
             case 1:
                 msg = `${this.interaction.user}, you took too much time to interact with the toy creation. No token have been used.`
+                Initiations.delete(this.interaction.user.id);
+                break;
+            case 2:
+                msg = `${this.interaction.user}, You've already started creating a toy. Please finish the creation or wait 2 minutes.`;
+
+                setTimeout(() => {
+                    Initiations.delete(this.interaction.user.id);
+                }, 120000)
+
                 break;
         }
 
