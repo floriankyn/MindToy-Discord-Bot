@@ -10,6 +10,7 @@ const { createCanvas, loadImage } = require('canvas')
 const fetch = require('node-fetch');
 const { request } = require('graphql-request');
 const axios = require("axios")
+
 class ToyCreationManager{
     constructor(interaction=null, client=null, config=null) {
         this.interaction = interaction;
@@ -46,22 +47,20 @@ class ToyCreationManager{
             case "toy":
                 await this.interaction.deferReply({ephemeral: true, fetchReply: true})
                     .then(async (message) => {
-                        if(!Initiations.has(this.interaction.user.id)) {
-                            Initiations.add(this.interaction.user.id);
-
-                            if(await this.checkCreationStatus()) {
-                                await this.gatherUserInput(message.id);
-                            } else {
-                                await this.backToPreviousGeneration(message.id);
-                            }
+                        if(await this.checkCreationStatus()) {
+                            await this.gatherUserInput(message.id);
                         } else {
-                            await this.displayErrorMessage(2, message.id);
+                            await this.backToPreviousGeneration(message.id);
                         }
                     })
                     .catch(console.error);
                 break;
             case "mint":
-                await this.mintInCaseOfIssue();
+                await this.interaction.deferReply({ephemeral: true, fetchReply: true})
+                    .then(async (message) => {
+                        await this.mintInCaseOfIssue();
+                    })
+                    .catch(console.error);
                 break;
         }
     }
@@ -139,7 +138,7 @@ class ToyCreationManager{
             let imageGenerationStatus = false;
 
             while (!imageGenerationStatus) {
-                await wait(3000);
+                await wait(1000);
 
                 let generation = await new Promise(async (resolve) => {
                     sdk.getModelsModelidInferencesInferenceid({modelId: 'caVLgv5XSlOF7vQTYQGwfg', inferenceId: imagesCreation.inference.id})
@@ -251,31 +250,31 @@ class ToyCreationManager{
                                         new ButtonBuilder()
                                             .setStyle("Secondary")
                                             .setLabel("#1")
-                                            .setCustomId("image1")
+                                            .setCustomId(`image1_${messageId}`)
                                     )
                                     .addComponents(
                                         new ButtonBuilder()
                                             .setStyle("Secondary")
                                             .setLabel("#2")
-                                            .setCustomId("image2")
+                                            .setCustomId(`image2_${messageId}`)
                                     )
                                     .addComponents(
                                         new ButtonBuilder()
                                             .setStyle("Secondary")
                                             .setLabel("#3")
-                                            .setCustomId("image3")
+                                            .setCustomId(`image3_${messageId}`)
                                     )
                                     .addComponents(
                                         new ButtonBuilder()
                                             .setStyle("Secondary")
                                             .setLabel("#4")
-                                            .setCustomId("image4")
+                                            .setCustomId(`image4_${messageId}`)
                                     )
                                     .addComponents(
                                         new ButtonBuilder()
                                             .setEmoji("🔁")
                                             .setStyle("Secondary")
-                                            .setCustomId("regenerate")
+                                            .setCustomId(`regenerate_${messageId}`)
                                     )
                             ]
                         }
@@ -294,13 +293,16 @@ class ToyCreationManager{
 
                             await this.db.query(conn, sql);
 
-                            const filter = (i) => i.user.id === this.interaction.user.id;
+                            let filterIds = [`image1_${messageId}`, `image2_${messageId}`, `image3_${messageId}`, `image4_${messageId}`, `regenerate_${messageId}`]
+
+                            const filter = (i) => i.user.id === this.interaction.user.id && filterIds.includes(i.customId);
 
                             await this.interaction.channel.awaitMessageComponent({filter})
                                 .then(
                                     async (collected) => {
+
                                         switch (collected.customId) {
-                                            case "image1":
+                                            case `image1_${messageId}`:
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
                                                         ephemeral: true,
@@ -327,7 +329,7 @@ class ToyCreationManager{
                                                 ).then().catch(console.error);
                                                 await this.magnifyImage(img1Buffer, conn, data);
                                                 break;
-                                            case "image2":
+                                            case `image2_${messageId}`:
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
                                                         ephemeral: true,
@@ -354,7 +356,7 @@ class ToyCreationManager{
                                                 ).then().catch(console.error);
                                                 await this.magnifyImage(img2Buffer, conn, data);
                                                 break;
-                                            case "image3":
+                                            case `image3_${messageId}`:
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
                                                         ephemeral: true,
@@ -381,7 +383,7 @@ class ToyCreationManager{
                                                 ).then().catch(console.error);
                                                 await this.magnifyImage(img3Buffer, conn, data);
                                                 break;
-                                            case "image4":
+                                            case `image4_${messageId}`:
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
                                                         ephemeral: true,
@@ -409,7 +411,9 @@ class ToyCreationManager{
 
                                                 await this.magnifyImage(img4Buffer, conn, data);
                                                 break;
-                                            case "regenerate":
+                                            case `regenerate_${messageId}`:
+                                                await collected.deferUpdate().then().catch(console.error);
+
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
                                                         ephemeral: true,
@@ -430,7 +434,7 @@ class ToyCreationManager{
                                                                 )
                                                                 .setTimestamp()
                                                         ],
-                                                        files: file,
+                                                        files: [],
                                                         components: []
                                                     }
                                                 ).then().catch(console.error);
@@ -612,6 +616,7 @@ class ToyCreationManager{
         });
 
         let attachment = new AttachmentBuilder(img, {name: "generation.png"});
+
         await this.interaction.followUp(
             {
                 ephemeral: true,
@@ -765,12 +770,12 @@ class ToyCreationManager{
                                     new ButtonBuilder()
                                         .setLabel("Mint")
                                         .setStyle("Success")
-                                        .setCustomId("mint")
+                                        .setCustomId(`mint_${message.id}`)
                                 )
                         ]
                     }).then(
                         async (collected) => {
-                            const filter = (i) => i.user.id === this.interaction.user.id;
+                            const filter = (i) => i.user.id === this.interaction.user.id && i.customId === `mint_${message.id}`;
 
                             await this.interaction.channel.awaitMessageComponent({filter})
                                 .then(
@@ -827,7 +832,7 @@ class ToyCreationManager{
                                         }).then().catch(console.error);
 
                                         switch (collected.customId) {
-                                            case "mint":
+                                            case `mint_${message.id}`:
                                                 await collected.deferUpdate().then().catch(console.error);
                                                 await this.nftManagment(conn, collected, data, attachment, img);
                                                 break;
@@ -1306,31 +1311,31 @@ class ToyCreationManager{
                             new ButtonBuilder()
                                 .setStyle("Primary")
                                 .setLabel("Style")
-                                .setCustomId("style")
+                                .setCustomId(`style_${messageId}`)
                         )
                         .addComponents(
                             new ButtonBuilder()
                                 .setStyle("Primary")
                                 .setLabel("Primary Color")
-                                .setCustomId("color1")
+                                .setCustomId(`color1_${messageId}`)
                         )
                         .addComponents(
                             new ButtonBuilder()
                                 .setStyle("Primary")
                                 .setLabel("Secondary Color")
-                                .setCustomId("color2")
+                                .setCustomId(`color2_${messageId}`)
                         )
                         .addComponents(
                             new ButtonBuilder()
                                 .setStyle("Primary")
                                 .setLabel("Words")
-                                .setCustomId("words")
+                                .setCustomId(`words_${messageId}`)
                         )
                         .addComponents(
                             new ButtonBuilder()
                                 .setStyle("Success")
                                 .setLabel("Generate")
-                                .setCustomId("generate")
+                                .setCustomId(`generate_${messageId}`)
                         )
 
                 await this.interaction.webhook.editMessage(messageId,
@@ -1340,7 +1345,9 @@ class ToyCreationManager{
                         components: [component]
                     }
                 ).then(async (interactionMessage) => {
-                    const filter = (i) => i.user.id === this.interaction.user.id;
+                    const filterIds = [`style_${messageId}`, `color1_${messageId}`, `color2_${messageId}`, `words_${messageId}`, `generate_${messageId}`]
+
+                    const filter = (i) => i.user.id === this.interaction.user.id && filterIds.includes(i.customId);
 
                     await interactionMessage.awaitMessageComponent({filter, time: 120_000})
                         .then(
@@ -1348,23 +1355,23 @@ class ToyCreationManager{
                                 await collected.deferUpdate().then().catch(console.error);
 
                                 switch (collected.customId) {
-                                    case "style":
+                                    case `style_${messageId}`:
                                         data.style = await this.selectStyle(messageId);
                                         resolve();
                                         break;
-                                    case "color1":
+                                    case `color1_${messageId}`:
                                         data.color1 = await this.selectColor("first", messageId);
                                         resolve();
                                         break;
-                                    case "color2":
+                                    case `color2_${messageId}`:
                                         data.color2 = await this.selectColor("second", messageId);
                                         resolve();
                                         break;
-                                    case "words":
+                                    case `words_${messageId}`:
                                         data.words = await this.typeWords(messageId);
                                         resolve();
                                         break;
-                                    case "generate":
+                                    case `generate_${messageId}`:
                                         await this.initNewGeneration(data, regeneration, messageId);
                                         resolve(proceed = true);
                                         break;
@@ -1414,7 +1421,7 @@ class ToyCreationManager{
                         new SelectMenuBuilder()
                             .setPlaceholder("Nothing Selected")
                             .setOptions(styles)
-                            .setCustomId("style_selection")
+                            .setCustomId(`style_selection_${messageId}`)
                     )
 
             await this.interaction.webhook.editMessage(messageId,
@@ -1424,7 +1431,7 @@ class ToyCreationManager{
                     components: [component]
                 }
             ).then(async (interactionMessage) => {
-                const filter = (i) => i.customId === 'style_selection' && i.user.id === this.interaction.user.id;
+                const filter = (i) => i.customId === `style_selection_${messageId}` && i.user.id === this.interaction.user.id;
 
                 await interactionMessage.awaitMessageComponent({filter, time: 120_000})
                     .then(
@@ -1676,7 +1683,7 @@ class ToyCreationManager{
                         new SelectMenuBuilder()
                             .setPlaceholder("Nothing Selected")
                             .setOptions(colors)
-                            .setCustomId("color_selection")
+                            .setCustomId(`color_selection_${messageId}`)
                     )
 
             await this.interaction.webhook.editMessage(messageId,
@@ -1686,7 +1693,7 @@ class ToyCreationManager{
                     components: [component]
                 }
             ).then(async (interactionMessage) => {
-                const filter = (i) => i.customId === 'color_selection' && i.user.id === this.interaction.user.id;
+                const filter = (i) => i.customId === `color_selection_${messageId}` && i.user.id === this.interaction.user.id;
 
                 await interactionMessage.awaitMessageComponent({filter, time: 120_000})
                     .then(
@@ -1725,7 +1732,7 @@ class ToyCreationManager{
                         new ButtonBuilder()
                             .setStyle("Primary")
                             .setLabel("Input")
-                            .setCustomId("input_words")
+                            .setCustomId(`input_words_${messageId}`)
                     )
 
             await this.interaction.webhook.editMessage(messageId,
@@ -1735,7 +1742,7 @@ class ToyCreationManager{
                     components: [component]
                 }
             ).then(async (interactionMessage) => {
-                const filter = (i) => i.customId === 'input_words' && i.user.id === this.interaction.user.id;
+                const filter = (i) => i.customId === `input_words_${messageId}` && i.user.id === this.interaction.user.id;
 
                 let passed = true;
 
@@ -1745,11 +1752,11 @@ class ToyCreationManager{
                             .then(
                                 async (collected) => {
                                     const modal = new ModalBuilder()
-                                        .setCustomId('words')
+                                        .setCustomId(`words_${messageId}`)
                                         .setTitle('Words');
 
                                     const wordsInput = new TextInputBuilder()
-                                        .setCustomId('inputtedWords')
+                                        .setCustomId(`inputtedWords_${messageId}`)
                                         .setLabel("What will be the generation words?")
                                         .setStyle(TextInputStyle.Short);
 
@@ -1758,14 +1765,14 @@ class ToyCreationManager{
 
 
                                     await collected.showModal(modal).then().catch(console.error);
-                                    const filter = (interaction) => interaction.customId === 'words';
+                                    const filter = (interaction) => interaction.customId === `words_${messageId}`;
 
                                     collected.awaitModalSubmit({ filter, time: 120_000 })
                                         .then(
                                             async (submission) => {
                                                 await submission.deferUpdate().then().catch(console.error);
 
-                                                let input = submission.fields.getTextInputValue("inputtedWords");
+                                                let input = submission.fields.getTextInputValue(`inputtedWords_${messageId}`);
                                                 input = input.slice().split(/ /);
 
                                                 let words = [];
@@ -1777,7 +1784,7 @@ class ToyCreationManager{
 
                                                 if(words.length === 2 || words.length === 1) {
                                                     await resolve2(passed = false)
-                                                    await resolve(submission.fields.getTextInputValue("inputtedWords"))
+                                                    await resolve(submission.fields.getTextInputValue(`inputtedWords_${messageId}`))
                                                 } else {
                                                     resolve2(passed = true)
                                                 }
