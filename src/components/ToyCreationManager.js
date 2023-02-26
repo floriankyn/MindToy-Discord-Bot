@@ -26,8 +26,7 @@ class ToyCreationManager{
     loadTables() {
         return [
             `CREATE TABLE IF NOT EXISTS dc_creation_tokens (user_id VARCHAR(30), tokens VARCHAR(10), cooldown VARCHAR(30))`,
-            `CREATE TABLE IF NOT EXISTS dc_generated_toys (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(40), image1 TEXT, image2 TEXT, image3 TEXT, image4 TEXT, date DATETIME)`,
-            `CREATE TABLE IF NOT EXISTS dc_minted_nfts (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(30), image_link TEXT)`
+            `CREATE TABLE IF NOT EXISTS dc_minted_nfts (user_id VARCHAR(30), image_link TEXT, paypal_order_id VARCHAR(255), hash VARCHAR(255), wallet VARCHAR(30), nftData TEXT, status VARCHAR(30))`,
         ];
     }
 
@@ -58,15 +57,269 @@ class ToyCreationManager{
             case "mint":
                 await this.interaction.deferReply({ephemeral: true, fetchReply: true})
                     .then(async (message) => {
-                        await this.mintInCaseOfIssue();
+                        await this.mintInCaseOfIssue(message.id);
                     })
                     .catch(console.error);
                 break;
         }
     }
 
-    async mintInCaseOfIssue() {
+    async mintInCaseOfIssue(messageId) {
+        this.db.connection().getConnection(async (err, conn) => {
+            if(err) throw err;
 
+            let MintedNfts = await this.db.query(conn, `SELECT * FROM dc_minted_nfts WHERE user_id = "${this.interaction.user.id}"`);
+
+            if(MintedNfts.length >= 1) {
+                let embeds = []
+                let attachment;
+                let img;
+                for (const [i, e] of MintedNfts.entries()) {
+                    img = fs.readFileSync(__dirname + e.image_link);
+                    attachment = new AttachmentBuilder(fs.readFileSync(__dirname + e.image_link), {name: `${e.paypal_order_id}.png`});
+
+                    switch (e.status) {
+                        case "PAYED":
+                            embeds.push([
+                                {
+                                    ephemeral: true,
+                                    embeds: [
+                                        new EmbedBuilder()
+                                            .setColor("Green")
+                                            .setAuthor({name: `Page: ${i+1}/${MintedNfts.length}`})
+                                            .setTitle("Payed")
+                                            .addFields(
+                                                {
+                                                    name: `Order ID`,
+                                                    value: `${"`" + e.paypal_order_id + "`"}`,
+                                                    inline: true
+                                                },
+                                            )
+                                            .setImage(`attachment://${e.paypal_order_id}.png`)
+                                            .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                                    ],
+                                    files: [attachment],
+                                    components: [
+                                        new ActionRowBuilder()
+                                            .addComponents(
+                                                new ButtonBuilder()
+                                                    .setEmoji("⬅")
+                                                    .setStyle("Primary")
+                                                    .setCustomId(`left_${messageId}`)
+                                            )
+                                            .addComponents(
+                                                new ButtonBuilder()
+                                                    .setEmoji("➡")
+                                                    .setStyle("Primary")
+                                                    .setCustomId(`right_${messageId}`)
+                                            )
+                                            .addComponents(
+                                                new ButtonBuilder()
+                                                    .setLabel("Mint")
+                                                    .setStyle("Success")
+                                                    .setCustomId(`mint_${messageId}`)
+                                            )
+                                    ]
+                                },
+                                e
+                            ]);
+                            break;
+                        case "MINTING":
+                            embeds.push([
+                                {
+                                    ephemeral: true,
+                                    embeds: [
+                                        new EmbedBuilder()
+                                            .setColor("Green")
+                                            .setAuthor({name: `Page: ${i+1}/${MintedNfts.length}`})
+                                            .setTitle("Minting")
+                                            .setDescription("The nft is weather currently minting or had a problem. Please contact the support in case of issues.")
+                                            .addFields(
+                                                {
+                                                    name: `Order ID`,
+                                                    value: `> ${"`" + e.paypal_order_id + "`"}`,
+                                                    inline: true
+                                                },
+                                                {
+                                                    name: '\u200B',
+                                                    value: '\u200B',
+                                                    inline: true
+                                                },
+                                                {
+                                                    name: '\u200B',
+                                                    value: '\u200B',
+                                                    inline: true
+                                                },
+                                            )
+                                            .setImage(`attachment://${e.paypal_order_id}.png`)
+                                            .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                                    ],
+                                    files: [attachment],
+                                    components: [
+                                        new ActionRowBuilder()
+                                            .addComponents(
+                                                new ButtonBuilder()
+                                                    .setEmoji("⬅")
+                                                    .setStyle("Primary")
+                                                    .setCustomId(`left_${messageId}`)
+                                            )
+                                            .addComponents(
+                                                new ButtonBuilder()
+                                                    .setEmoji("➡")
+                                                    .setStyle("Primary")
+                                                    .setCustomId(`right_${messageId}`)
+                                            )
+                                    ]
+                                },
+                                e
+                            ]);
+                            break;
+                        case "MINTED":
+                            embeds.push([
+                                {
+                                    ephemeral: true,
+                                    embeds: [
+                                        new EmbedBuilder()
+                                            .setAuthor({name: `Page: ${i+1}/${MintedNfts.length}`})
+                                            .setTitle("Minted NFT")
+                                            .setColor("Green")
+                                            .addFields(
+                                                {
+                                                    name: `Order ID`,
+                                                    value: `${"`" + e.paypal_order_id + "`"}`,
+                                                    inline: true
+                                                },
+                                                {
+                                                    name: `NFT Viewer`,
+                                                    value: `[Click Here](https://testnet.flowview.app/account/${e.wallet.address}/collection)`,
+                                                    inline: true
+                                                },
+                                                {
+                                                    name: `Wallet Address`,
+                                                    value: `${"`" + e.wallet + "`"}`,
+                                                    inline: false
+                                                },
+                                                {
+                                                    name: `Hash`,
+                                                    value: `${"`" + e.hash + "`"}`,
+                                                    inline: false
+                                                },
+                                            )
+                                            .setImage(`attachment://${e.paypal_order_id}.png`)
+                                            .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
+                                    ],
+                                    files: [attachment],
+                                    components: [
+                                        new ActionRowBuilder()
+                                            .addComponents(
+                                                new ButtonBuilder()
+                                                    .setEmoji("⬅")
+                                                    .setStyle("Primary")
+                                                    .setCustomId(`left_${messageId}`)
+                                            )
+                                            .addComponents(
+                                                new ButtonBuilder()
+                                                    .setEmoji("➡")
+                                                    .setStyle("Primary")
+                                                    .setCustomId(`right_${messageId}`)
+                                            )
+                                    ]
+                                },
+                                e
+                            ]);
+                            break;
+                    }
+                }
+
+                let pageIndex = 0;
+
+                await this.interaction.webhook.editMessage(messageId, embeds[pageIndex][0])
+                    .then(async (message) => {
+                        while (Date.now() < Date.now()+300000) {
+                            await new Promise(async (resolve) => {
+                                let filterIds = [`right_${messageId}`, `left_${messageId}`, `mint_${messageId}`]
+                                const filter = (i) => i.user.id === this.interaction.user.id && filterIds.includes(i.customId);
+
+                                const collector = await this.interaction.channel.createMessageComponentCollector(filter, {time: 300000, maxProcessed: 1});
+
+                                collector.on("collect", async (collected) => {
+                                    switch (collected.customId) {
+                                        case `left_${messageId}`:
+                                            if(pageIndex-1 >= 0) {
+                                                pageIndex--
+                                                await this.interaction.webhook.editMessage(message.id,
+                                                    embeds[pageIndex][0]
+                                                ).then().catch(console.error);
+                                            }
+
+                                            await collected.deferUpdate().then().catch(console.error);
+                                            break;
+                                        case `right_${messageId}`:
+                                            if(pageIndex+1 <= embeds.length-1) {
+                                                pageIndex++
+                                                await this.interaction.webhook.editMessage(message.id,
+                                                    embeds[pageIndex][0]
+                                                ).then().catch(console.error);
+                                            }
+
+                                            await collected.deferUpdate().then().catch(console.error);
+                                            break;
+                                        case `mint_${messageId}`:
+                                            let NftState = await this.db.query(conn, `SELECT * FROM dc_minted_nfts WHERE paypal_order_id = "${embeds[pageIndex][1].paypal_order_id}"`)
+                                            
+                                            if(NftState[0].status === "PAYED") {
+                                                await this.interaction.webhook.deleteMessage(message.id).then().catch(console.error);
+
+                                                let nftRawData = embeds[pageIndex][1].nftData;
+                                                let nftUsableData = "";
+
+                                                for (const e of nftRawData) {
+                                                    nftUsableData += e.replace("'", '"');
+                                                }
+
+                                                nftUsableData = JSON.parse(nftUsableData);
+
+                                                await collected.deferUpdate().then().catch(console.error);
+
+                                                await this.nftManagment(conn, collected, nftUsableData, attachment, img, embeds[pageIndex][1].paypal_order_id);
+                                            } else {
+                                                await this.interaction.followUp(
+                                                    {
+                                                        ephemeral: true,
+                                                        content: "Your nft is currently minting. Please wait."
+                                                    }
+                                                ).then().catch(console.error);
+                                            }
+
+                                            break;
+                                    }
+                                });
+
+
+                            });
+                        }
+                    })
+                    .catch(console.error);
+
+            } else {
+                await this.interaction.webhook.editMessage(messageId, {
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle("Error")
+                            .setDescription("You haven't minted / bought an nft/toy yet. Please purchase one. You'll then be able to see it here.")
+                            .setColor("Red")
+                            .setFooter(
+                                {
+                                    text: this.interaction.guild.name,
+                                    iconURL: this.interaction.guild.iconURL()
+                                }
+                            )
+                            .setTimestamp()
+                    ]
+                }).then().catch(console.error);
+            }
+            this.db.connection().releaseConnection(conn);
+        });
     }
 
     async backToPreviousGeneration() {
@@ -123,8 +376,6 @@ class ToyCreationManager{
                 )
                 .setTimestamp()
 
-
-
         await this.interaction.webhook.editMessage(messageId,
             {
                 ephemeral: true,
@@ -138,7 +389,7 @@ class ToyCreationManager{
             let imageGenerationStatus = false;
 
             while (!imageGenerationStatus) {
-                await wait(1000);
+                await wait(3000);
 
                 let generation = await new Promise(async (resolve) => {
                     sdk.getModelsModelidInferencesInferenceid({modelId: 'caVLgv5XSlOF7vQTYQGwfg', inferenceId: imagesCreation.inference.id})
@@ -543,7 +794,6 @@ class ToyCreationManager{
     }
 
     async magnifyImage(img, conn, data) {
-        Initiations.delete(this.interaction.user.id);
         let access_token = await new Promise(async (resolve) => {
             const clientId = this.config.paypal.client_id;
             const clientSecret = this.config.paypal.client_secret;
@@ -615,7 +865,7 @@ class ToyCreationManager{
                 .catch(err => console.error(err));
         });
 
-        let attachment = new AttachmentBuilder(img, {name: "generation.png"});
+        let attachment = new AttachmentBuilder(img, {name: `${order[0].id}.png`});
 
         await this.interaction.followUp(
             {
@@ -623,7 +873,7 @@ class ToyCreationManager{
                 embeds: [
                     new EmbedBuilder()
                         .setAuthor({name: this.client.user.username, iconURL: this.client.user.avatarURL()})
-                        .setImage("attachment://generation.png")
+                        .setImage(`attachment://${order[0].id}.png`)
                         .setColor("Blue")
                         .addFields(
                             {
@@ -690,8 +940,6 @@ class ToyCreationManager{
             while (orderStatus !== "CREATED") {
                 await wait(2000);
 
-
-
                 let status = await new Promise(async (resolve) => {
                     const orderId = order[0].id;
                     const accessToken = access_token.access_token;
@@ -717,11 +965,22 @@ class ToyCreationManager{
                 if(status.status === "APPROVED") {
                     orderStatus = "APPROVED";
 
+                    fs.writeFileSync(__dirname + `/../assets/images/nfts/minted/${order[0].id}.png`, img)
+
+                    let dataStr = JSON.stringify(data);
+                    let dataToDb = "";
+
+                    for(const e of dataStr) {
+                        dataToDb += e.replace('"', "'");
+                    }
+
+                    await this.db.query(conn, `INSERT INTO dc_minted_nfts (user_id, image_link, paypal_order_id, nftData, status) VALUES ("${this.interaction.user.id}", "${`/../assets/images/nfts/minted/${order[0].id}.png`}", "${order[0].id}", "${dataToDb}", "PAYED")`)
+
                     await this.interaction.webhook.editMessage(message.id,{
                         ephemeral: true,
                         embeds: [
                             new EmbedBuilder()
-                                .setImage("attachment://generation.png")
+                                .setImage(`attachment://${order[0].id}.png`)
                                 .setColor("Green")
                                 .addFields(
                                     {
@@ -785,7 +1044,7 @@ class ToyCreationManager{
                                             ephemeral: true,
                                             embeds: [
                                                 new EmbedBuilder()
-                                                    .setImage("attachment://generation.png")
+                                                    .setImage(`attachment://${order[0].id}.png`)
                                                     .setColor("Green")
                                                     .addFields(
                                                         {
@@ -834,7 +1093,7 @@ class ToyCreationManager{
                                         switch (collected.customId) {
                                             case `mint_${message.id}`:
                                                 await collected.deferUpdate().then().catch(console.error);
-                                                await this.nftManagment(conn, collected, data, attachment, img);
+                                                await this.nftManagment(conn, collected, data, attachment, img, order[0].id);
                                                 break;
                                         }
                                     }
@@ -852,7 +1111,10 @@ class ToyCreationManager{
         }).catch(console.error);
     }
 
-    async nftManagment(conn, collected, nftData, attachment, img) {
+    async nftManagment(conn, collected, nftData, attachment, img, orderId) {
+
+        await this.db.query(conn, `UPDATE dc_minted_nfts SET status = "MINTING" WHERE paypal_order_id = "${orderId}"`);
+
         await this.interaction.followUp(
             {
                 ephemeral: true,
@@ -861,7 +1123,7 @@ class ToyCreationManager{
                         .setTitle("Minting")
                         .setColor("Blue")
                         .setDescription("We are minting your nft! Please wait.")
-                        .setImage("attachment://generation.png")
+                        .setImage(`attachment://${orderId}.png`)
                         .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
                         .setTimestamp()
                 ],
@@ -927,7 +1189,6 @@ class ToyCreationManager{
 
                     resolve();
                 });
-
 
                 let nftModel = await new Promise(async (resolve) => {
                     const query = `
@@ -1027,7 +1288,7 @@ class ToyCreationManager{
                               }
                           }
                         }
-                    `
+                    `;
 
                     const headers = {
                         'X-Niftory-API-Key': api_key,
@@ -1037,7 +1298,6 @@ class ToyCreationManager{
                     const variables = {
                         "id": mintNFT.mintNFTModel.id
                     }
-
 
                     let isMinted = false
                     while(!isMinted) {
@@ -1167,6 +1427,8 @@ class ToyCreationManager{
                     });
                 });
 
+                await this.db.query(conn, `UPDATE dc_minted_nfts SET hash = "${mintedNftInfo.nft.transactions[0].hash}", wallet = "${retrieveWallet.walletById.address}", status = "MINTED" WHERE paypal_order_id = "${orderId}"`);
+
                 await this.interaction.webhook.editMessage(message.id,
                     {
                         embeds: [
@@ -1193,7 +1455,7 @@ class ToyCreationManager{
                                     },
 
                                 )
-                                .setImage("attachment://generation.png")
+                                .setImage(`attachment://${orderId}.png`)
                                 .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
                                 .setTimestamp()
                         ],
@@ -1407,12 +1669,7 @@ class ToyCreationManager{
                     .setTitle("Style")
                     .setColor("Blue")
                     .setDescription(`${this.interaction.user}, select the style you wish for the toy in the selection below!`)
-                    .setFooter(
-                        {
-                            text: this.interaction.guild.name,
-                            iconURL: this.interaction.guild.iconURL()
-                        }
-                    )
+                    .setFooter({text: this.interaction.guild.name, iconURL: this.interaction.guild.iconURL()})
                     .setTimestamp()
 
             let component =
