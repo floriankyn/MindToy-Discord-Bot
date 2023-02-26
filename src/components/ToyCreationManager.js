@@ -1,13 +1,8 @@
 //ToyCreationManager.js//
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder,
-    Base,
-    Attachment
-} = require("discord.js");
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder, Base, Attachment} = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { CommandsLoader } = require("./CommandsLoader.js");
 const { Database } = require("../database/Database.js");
 const fs = require("fs");
-const { Base64 } = require('js-base64');
 const sdk = require('api')('@scenario-api/v1.0#5lwpphle8jvsvf');
 let Initiations = new Set();
 const wait = require('util').promisify(setTimeout);
@@ -15,10 +10,6 @@ const { createCanvas, loadImage } = require('canvas')
 const fetch = require('node-fetch');
 const { request } = require('graphql-request');
 const axios = require("axios")
-const url = require("url")
-const request2 = require('request');
-const {raw} = require("mysql2");
-
 class ToyCreationManager{
     constructor(interaction=null, client=null, config=null) {
         this.interaction = interaction;
@@ -35,7 +26,7 @@ class ToyCreationManager{
         return [
             `CREATE TABLE IF NOT EXISTS dc_creation_tokens (user_id VARCHAR(30), tokens VARCHAR(10), cooldown VARCHAR(30))`,
             `CREATE TABLE IF NOT EXISTS dc_generated_toys (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(40), image1 TEXT, image2 TEXT, image3 TEXT, image4 TEXT, date DATETIME)`,
-            `CREATE TABLE IF NOT EXISTS dc_minted_nfts (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(30), nft_id VARCHAR(255))`
+            `CREATE TABLE IF NOT EXISTS dc_minted_nfts (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(30), image_link TEXT)`
         ];
     }
 
@@ -43,34 +34,47 @@ class ToyCreationManager{
         return [
             new SlashCommandBuilder()
                 .setName("toy")
-                .setDescription("Create a new toy!")
+                .setDescription("Create a new toy!"),
+            new SlashCommandBuilder()
+                .setName("mint")
+                .setDescription("Something went wont with the toy/nft you bought? Mint it via the command.")
         ];
     }
 
     async on() {
-        await this.interaction.deferReply({ephemeral: true}).then().catch(console.error);
+        switch (this.interaction.commandName) {
+            case "toy":
+                await this.interaction.deferReply({ephemeral: true, fetchReply: true})
+                    .then(async (message) => {
+                        if(!Initiations.has(this.interaction.user.id)) {
+                            Initiations.add(this.interaction.user.id);
 
-        if(!Initiations.has(this.interaction.user.id)) {
-            Initiations.add(this.interaction.user.id);
-            switch (this.interaction.commandName) {
-                case "toy":
-                    if(await this.checkCreationStatus()) {
-                        await this.gatherUserInput();
-                    } else {
-                        await this.backToPreviousGeneration();
-                    }
-                    break;
-            }
-        } else {
-            await this.displayErrorMessage(2);
+                            if(await this.checkCreationStatus()) {
+                                await this.gatherUserInput(message.id);
+                            } else {
+                                await this.backToPreviousGeneration(message.id);
+                            }
+                        } else {
+                            await this.displayErrorMessage(2, message.id);
+                        }
+                    })
+                    .catch(console.error);
+                break;
+            case "mint":
+                await this.mintInCaseOfIssue();
+                break;
         }
+    }
+
+    async mintInCaseOfIssue() {
+
     }
 
     async backToPreviousGeneration() {
 
     }
 
-    async initNewGeneration(data, regeneration) {
+    async initNewGeneration(data, regeneration, messageId) {
         let stuff = [
             {
                 name: "Style",
@@ -122,11 +126,12 @@ class ToyCreationManager{
 
 
 
-        await this.interaction.followUp(
+        await this.interaction.webhook.editMessage(messageId,
             {
                 ephemeral: true,
                 fetchReply: true,
-                embeds: [embed]
+                embeds: [embed],
+                components: []
             }
         ).then(async (interactionMessage) => {
             let imagesCreation = await this.pickStyle(data.style, data)
@@ -191,7 +196,7 @@ class ToyCreationManager{
                     img = "attachment://generation.png"
                 }
 
-                await this.interaction.webhook.editMessage(interactionMessage.id,
+                await this.interaction.webhook.editMessage(messageId,
                     {
                         ephemeral: true,
                         fetchReply: true,
@@ -219,7 +224,7 @@ class ToyCreationManager{
                 if(generation.inference.progress === 1) {
                     imageGenerationStatus = true;
 
-                    await this.interaction.webhook.editMessage(interactionMessage.id,
+                    await this.interaction.webhook.editMessage(messageId,
                         {
                             ephemeral: true,
                             fetchReply: true,
@@ -294,46 +299,9 @@ class ToyCreationManager{
                             await this.interaction.channel.awaitMessageComponent({filter})
                                 .then(
                                     async (collected) => {
-                                        await this.interaction.webhook.editMessage(interactionMessage.id,
-                                            {
-                                                ephemeral: true,
-                                                fetchReply: true,
-                                                embeds: [
-                                                    new EmbedBuilder()
-                                                        .setTitle("Generation")
-                                                        .setColor("Blue")
-                                                        .setImage(img)
-                                                        .addFields(
-                                                            stuff
-                                                        )
-                                                        .setFooter(
-                                                            {
-                                                                text: this.interaction.guild.name,
-                                                                iconURL: this.interaction.guild.iconURL()
-                                                            }
-                                                        )
-                                                        .setTimestamp()
-                                                ],
-                                                files: file,
-                                                components: []
-                                            }
-                                        ).then().catch(console.error);
-
                                         switch (collected.customId) {
                                             case "image1":
-                                                await this.magnifyImage(img1Buffer, conn, data);
-                                                break;
-                                            case "image2":
-                                                await this.magnifyImage(img2Buffer, conn, data);
-                                                break;
-                                            case "image3":
-                                                await this.magnifyImage(img3Buffer, conn, data);
-                                                break;
-                                            case "image4":
-                                                await this.magnifyImage(img4Buffer, conn, data);
-                                                break;
-                                            case "regenerate":
-                                                await this.interaction.webhook.editMessage(message.id,
+                                                await this.interaction.webhook.editMessage(messageId,
                                                     {
                                                         ephemeral: true,
                                                         fetchReply: true,
@@ -353,12 +321,122 @@ class ToyCreationManager{
                                                                 )
                                                                 .setTimestamp()
                                                         ],
+                                                        files: file,
+                                                        components: []
+                                                    }
+                                                ).then().catch(console.error);
+                                                await this.magnifyImage(img1Buffer, conn, data);
+                                                break;
+                                            case "image2":
+                                                await this.interaction.webhook.editMessage(messageId,
+                                                    {
+                                                        ephemeral: true,
+                                                        fetchReply: true,
+                                                        embeds: [
+                                                            new EmbedBuilder()
+                                                                .setTitle("Generation")
+                                                                .setColor("Blue")
+                                                                .setImage(img)
+                                                                .addFields(
+                                                                    stuff
+                                                                )
+                                                                .setFooter(
+                                                                    {
+                                                                        text: this.interaction.guild.name,
+                                                                        iconURL: this.interaction.guild.iconURL()
+                                                                    }
+                                                                )
+                                                                .setTimestamp()
+                                                        ],
+                                                        files: file,
+                                                        components: []
+                                                    }
+                                                ).then().catch(console.error);
+                                                await this.magnifyImage(img2Buffer, conn, data);
+                                                break;
+                                            case "image3":
+                                                await this.interaction.webhook.editMessage(messageId,
+                                                    {
+                                                        ephemeral: true,
+                                                        fetchReply: true,
+                                                        embeds: [
+                                                            new EmbedBuilder()
+                                                                .setTitle("Generation")
+                                                                .setColor("Blue")
+                                                                .setImage(img)
+                                                                .addFields(
+                                                                    stuff
+                                                                )
+                                                                .setFooter(
+                                                                    {
+                                                                        text: this.interaction.guild.name,
+                                                                        iconURL: this.interaction.guild.iconURL()
+                                                                    }
+                                                                )
+                                                                .setTimestamp()
+                                                        ],
+                                                        files: file,
+                                                        components: []
+                                                    }
+                                                ).then().catch(console.error);
+                                                await this.magnifyImage(img3Buffer, conn, data);
+                                                break;
+                                            case "image4":
+                                                await this.interaction.webhook.editMessage(messageId,
+                                                    {
+                                                        ephemeral: true,
+                                                        fetchReply: true,
+                                                        embeds: [
+                                                            new EmbedBuilder()
+                                                                .setTitle("Generation")
+                                                                .setColor("Blue")
+                                                                .setImage(img)
+                                                                .addFields(
+                                                                    stuff
+                                                                )
+                                                                .setFooter(
+                                                                    {
+                                                                        text: this.interaction.guild.name,
+                                                                        iconURL: this.interaction.guild.iconURL()
+                                                                    }
+                                                                )
+                                                                .setTimestamp()
+                                                        ],
+                                                        files: file,
                                                         components: []
                                                     }
                                                 ).then().catch(console.error);
 
-                                                await this.summerUp(data, true);
+                                                await this.magnifyImage(img4Buffer, conn, data);
                                                 break;
+                                            case "regenerate":
+                                                await this.interaction.webhook.editMessage(messageId,
+                                                    {
+                                                        ephemeral: true,
+                                                        fetchReply: true,
+                                                        embeds: [
+                                                            new EmbedBuilder()
+                                                                .setTitle("Generation")
+                                                                .setColor("Blue")
+                                                                .setImage(img)
+                                                                .addFields(
+                                                                    stuff
+                                                                )
+                                                                .setFooter(
+                                                                    {
+                                                                        text: this.interaction.guild.name,
+                                                                        iconURL: this.interaction.guild.iconURL()
+                                                                    }
+                                                                )
+                                                                .setTimestamp()
+                                                        ],
+                                                        files: file,
+                                                        components: []
+                                                    }
+                                                ).then().catch(console.error);
+
+                                                await this.summerUp(data, true, messageId);
+                                            break;
                                         }
                                     }
                                 )
@@ -492,8 +570,8 @@ class ToyCreationManager{
                     {
                         "items": [
                             {
-                                "name": "Mind Toy#001",
-                                "description": "55mm Delivered to you within 3/4 weeks internationally + Flow nft.",
+                                "name": "Mind Toy",
+                                "description": "Physical Art Toy - 55mm\nDelivered in 3/4 Weeks\nYour Licence NFT",
                                 "quantity": "1",
                                 "unit_amount": {
                                     "currency_code": "USD",
@@ -539,6 +617,7 @@ class ToyCreationManager{
                 ephemeral: true,
                 embeds: [
                     new EmbedBuilder()
+                        .setAuthor({name: this.client.user.username, iconURL: this.client.user.avatarURL()})
                         .setImage("attachment://generation.png")
                         .setColor("Blue")
                         .addFields(
@@ -573,7 +652,9 @@ class ToyCreationManager{
                                 inline: true
                             }
                         )
-                        .setDescription("> Wonderful! Now you can go ahead and purchase your toy and nft! Hit the payment method you'd like to use.")
+                        .setDescription("Nice one! \n" +
+                            "You can purchase your design to have it made as a collectible art toy!\n" +
+                            "Pay using Paypal below.")
                         .setFooter(
                             {
                                 text: this.interaction.guild.name,
@@ -601,6 +682,8 @@ class ToyCreationManager{
 
             while (orderStatus !== "CREATED") {
                 await wait(2000);
+
+
 
                 let status = await new Promise(async (resolve) => {
                     const orderId = order[0].id;
@@ -1144,22 +1227,22 @@ class ToyCreationManager{
         });
     }
 
-    async gatherUserInput() {
+    async gatherUserInput(messageId) {
         return await new Promise(async (resolve) => {
             let data = {};
 
-            data.style = await this.selectStyle()
-            data.color1 = await this.selectColor("first");
-            data.color2 = await this.selectColor("second");
-            data.words = await this.typeWords();
+            data.style = await this.selectStyle(messageId)
+            data.color1 = await this.selectColor("first", messageId);
+            data.color2 = await this.selectColor("second", messageId);
+            data.words = await this.typeWords(messageId);
 
-            data = await this.summerUp(data);
+            data = await this.summerUp(data, null, messageId);
 
             resolve(data)
         });
     }
 
-    async summerUp(Data, regeneration) {
+    async summerUp(Data, regeneration, messageId) {
         let data = Data;
 
         let proceed = false;
@@ -1248,7 +1331,7 @@ class ToyCreationManager{
                                 .setCustomId("generate")
                         )
 
-                await this.interaction.followUp(
+                await this.interaction.webhook.editMessage(messageId,
                     {
                         ephemeral: true,
                         embeds: [embed],
@@ -1261,28 +1344,26 @@ class ToyCreationManager{
                         .then(
                             async (collected) => {
                                 await collected.deferUpdate().then().catch(console.error);
-                                await collected.deleteReply().then().catch(console.error);
-
 
                                 switch (collected.customId) {
                                     case "style":
-                                        data.style = await this.selectStyle();
+                                        data.style = await this.selectStyle(messageId);
                                         resolve();
                                         break;
                                     case "color1":
-                                        data.color1 = await this.selectColor("first");
+                                        data.color1 = await this.selectColor("first", messageId);
                                         resolve();
                                         break;
                                     case "color2":
-                                        data.color2 = await this.selectColor("second");
+                                        data.color2 = await this.selectColor("second", messageId);
                                         resolve();
                                         break;
                                     case "words":
-                                        data.words = await this.typeWords();
+                                        data.words = await this.typeWords(messageId);
                                         resolve();
                                         break;
                                     case "generate":
-                                        await this.initNewGeneration(data, regeneration);
+                                        await this.initNewGeneration(data, regeneration, messageId);
                                         resolve(proceed = true);
                                         break;
                                 }
@@ -1299,7 +1380,7 @@ class ToyCreationManager{
         }
     }
 
-    async selectStyle() {
+    async selectStyle(messageId) {
         return await new Promise(async (resolve) => {
             let styles = [
                 {
@@ -1334,7 +1415,7 @@ class ToyCreationManager{
                             .setCustomId("style_selection")
                     )
 
-            await this.interaction.followUp(
+            await this.interaction.webhook.editMessage(messageId,
                 {
                     ephemeral: true,
                     embeds: [embed],
@@ -1347,8 +1428,6 @@ class ToyCreationManager{
                     .then(
                         async (collected) => {
                             await collected.deferUpdate().then().catch(console.error);
-                            await collected.deleteReply().then().catch(console.error);
-
                             await resolve(collected.values);
                         }
                     )
@@ -1361,7 +1440,7 @@ class ToyCreationManager{
         });
     }
 
-    async selectColor(pos) {
+    async selectColor(pos, messageId) {
         return await new Promise(async (resolve) => {
             let colors = [];
 
@@ -1370,103 +1449,103 @@ class ToyCreationManager{
                     colors = [
                         {
                             label: "Red",
-                            value: "(Red)"
+                            value: "Red"
                         },
                         {
                             label: "Crimson",
-                            value: "(Crimson)"
+                            value: "Crimson"
                         },
                         {
                             label: "Cherry Red",
-                            value: "(Cherry Red)"
+                            value: "Cherry Red"
                         },
                         {
                             label: "Scarlet",
-                            value: "(Scarlet)"
+                            value: "Scarlet"
                         },
                         {
                             label: "Burnt Sienna",
-                            value: "(Burnt Sienna)"
+                            value: "Burnt Sienna"
                         },
                         {
                             label: "Orange",
-                            value: "(Orange)"
+                            value: "Orange"
                         },
                         {
                             label: "Tangerine",
-                            value: "(Tangerine)"
+                            value: "Tangerine"
                         },
                         {
                             label: "Burnt Orange",
-                            value: "(Burnt Orange)"
+                            value: "Burnt Orange"
                         },
                         {
                             label: "Peach",
-                            value: "(Peach)"
+                            value: "Peach"
                         },
                         {
                             label: "Yellow",
-                            value: "(Yellow)"
+                            value: "Yellow"
                         },
                         {
                             label: "Lemon Yellow",
-                            value: "(Lemon Yellow)"
+                            value: "Lemon Yellow"
                         },
                         {
                             label: "Canary Yellow",
-                            value: "(Canary Yellow)"
+                            value: "Canary Yellow"
                         },
                         {
                             label: "Golden Yellow",
-                            value: "(Golden Yellow)"
+                            value: "Golden Yellow"
                         },
                         {
                             label: "Lime Green",
-                            value: "(Lime Green)"
+                            value: "Lime Green"
                         },
                         {
                             label: "Forest Green",
-                            value: "(Forest Green)"
+                            value: "Forest Green"
                         },
                         {
                             label: "Olive Green",
-                            value: "(Olive Green)"
+                            value: "Olive Green"
                         },
                         {
                             label: "Teal",
-                            value: "(Teal)"
+                            value: "Teal"
                         },
                         {
                             label: "Aqua",
-                            value: "(Aqua)"
+                            value: "Aqua"
                         },
                         {
                             label: "Light Blue",
-                            value: "(Light Blue)"
+                            value: "Light Blue"
                         },
                         {
                             label: "Royal Blue",
-                            value: "(Royal Blue)"
+                            value: "Royal Blue"
                         },
                         {
                             label: "Navy Blue",
-                            value: "(Navy Blue)"
+                            value: "Navy Blue"
                         },
                         {
                             label: "Lavender",
-                            value: "(Lavender)"
+                            value: "Lavender"
                         },
                         {
                             label: "Violet",
-                            value: "(Violet)"
+                            value: "Violet"
                         },
                         {
                             label: "Magenta",
-                            value: "(Magenta)"
+                            value: "Magenta"
                         },
                         {
                             label: "Pink",
-                            value: "(Pink)"
+                            value: "Pink"
                         }
                     ];
                     break;
@@ -1598,7 +1677,7 @@ class ToyCreationManager{
                             .setCustomId("color_selection")
                     )
 
-            await this.interaction.followUp(
+            await this.interaction.webhook.editMessage(messageId,
                 {
                     ephemeral: true,
                     embeds: [embed],
@@ -1611,8 +1690,6 @@ class ToyCreationManager{
                     .then(
                         async (collected) => {
                             await collected.deferUpdate().then().catch(console.error);
-                            await collected.deleteReply().then().catch(console.error);
-
                             await resolve(collected.values);
                         }
                     )
@@ -1625,7 +1702,7 @@ class ToyCreationManager{
         });
     }
 
-    async typeWords() {
+    async typeWords(messageId) {
         return await new Promise(async (resolve) => {
             let embed =
                 new EmbedBuilder()
@@ -1649,7 +1726,7 @@ class ToyCreationManager{
                             .setCustomId("input_words")
                     )
 
-            await this.interaction.followUp(
+            await this.interaction.webhook.editMessage(messageId,
                 {
                     ephemeral: true,
                     embeds: [embed],
@@ -1698,7 +1775,6 @@ class ToyCreationManager{
 
                                                 if(words.length === 2 || words.length === 1) {
                                                     await resolve2(passed = false)
-                                                    await collected.deleteReply().then().catch(console.error);
                                                     await resolve(submission.fields.getTextInputValue("inputtedWords"))
                                                 } else {
                                                     resolve2(passed = true)
@@ -1725,7 +1801,7 @@ class ToyCreationManager{
         });
     }
 
-    async displayErrorMessage(type) {
+    async displayErrorMessage(type, messageId) {
         let msg;
 
         switch (type) {
@@ -1743,7 +1819,7 @@ class ToyCreationManager{
                 break;
         }
 
-        await this.interaction.editReply(
+        await this.interaction.webhook.editMessage(messageId,
             {
                 embeds: [
                     new EmbedBuilder()
