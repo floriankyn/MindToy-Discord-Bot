@@ -571,7 +571,7 @@ class ToyCreationManager{
                         "items": [
                             {
                                 "name": "Mind Toy",
-                                "description": "Physical Art Toy - 55mm\nDelivered in 3/4 Weeks\nYour Licence NFT",
+                                "description": "Physical Art Toy - 55mm Delivered in 3/4 Weeks + Your Licence NFT",
                                 "quantity": "1",
                                 "unit_amount": {
                                     "currency_code": "USD",
@@ -633,7 +633,7 @@ class ToyCreationManager{
                             },
                             {
                                 name: `Description`,
-                                value: `${order[1].purchase_units[0].items[0].description}`,
+                                value: `55mm Art Toy \n Delivered in 3/4 Weeks \n Your Licence NFT`,
                                 inline: false
                             },
                             {
@@ -652,9 +652,11 @@ class ToyCreationManager{
                                 inline: true
                             }
                         )
-                        .setDescription("Nice one! \n" +
-                            "You can purchase your design to have it made as a collectible art toy!\n" +
-                            "Pay using Paypal below.")
+                        .setDescription("**Nice one!** \n" +
+                            "**Want as a PHYSICAL COLLECTIBLE!**\n" +
+                            "**+ Exclusive NFT Licence on FLOW ?**" +
+                            "Pay using Paypal below."
+                        )
                         .setFooter(
                             {
                                 text: this.interaction.guild.name,
