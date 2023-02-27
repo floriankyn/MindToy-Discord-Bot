@@ -266,7 +266,7 @@ class ToyCreationManager{
                                             break;
                                         case `mint_${messageId}`:
                                             let NftState = await this.db.query(conn, `SELECT * FROM dc_minted_nfts WHERE paypal_order_id = "${embeds[pageIndex][1].paypal_order_id}"`)
-                                            
+
                                             if(NftState[0].status === "PAYED") {
                                                 await this.interaction.webhook.deleteMessage(message.id).then().catch(console.error);
 
