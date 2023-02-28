@@ -294,8 +294,6 @@ class ToyCreationManager{
                                             break;
                                     }
                                 });
-
-
                             });
                         }
                     })
@@ -389,7 +387,7 @@ class ToyCreationManager{
             let imageGenerationStatus = false;
 
             while (!imageGenerationStatus) {
-                await wait(3000);
+                await wait(5000);
 
                 let generation = await new Promise(async (resolve) => {
                     sdk.getModelsModelidInferencesInferenceid({modelId: 'caVLgv5XSlOF7vQTYQGwfg', inferenceId: imagesCreation.inference.id})
@@ -762,7 +760,7 @@ class ToyCreationManager{
                         });
                     break;
                 case "shadow":
-                    image = fs.readFileSync(__dirname + "/../assets/images/styles/headz.png");
+                    image = await this.pickShadowImage(data.color1);
 
                     sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
                     sdk.postModelsModelidInferences({
@@ -778,19 +776,76 @@ class ToyCreationManager{
                                 height: 512
                             }
                         },
-                        {modelId: 'caVLgv5XSlOF7vQTYQGwfg'}
+                        {
+                            modelId: 'caVLgv5XSlOF7vQTYQGwfg'
+                        }
                     )
-                        .then(async ({ data }) => {
-                            await resolve(data);
-                        })
-                        .catch(err => {
-                            console.error(err)
-                            resolve(err);
-                        });
+                    .then(async ({ data }) => {
+                        await resolve(data);
+                    })
+                    .catch(err => {
+                        console.error(err)
+                        resolve(err);
+                    });
                     break;
             }
         });
 
+    }
+
+    async pickShadowImage(color) {
+        switch (color[0]) {
+            case "Fire Red":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/fire_red.png`);
+            case "Sky Blue":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/sky_blue.png`);
+            case "Aqua":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/aqua.png`);
+            case "Dark Teal":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/dark_teal.png`);
+            case "Teal":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/teal.png`);
+            case "Pastel Green":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/pastel_green.png`);
+            case "Forest Green":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/forest_green.png`);
+            case "Pastel Pink":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/pastel_pink.png`);
+            case "Warm Brown":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/warm_brown.png`);
+            case "Pastel Yellow":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/pastel_yellow.png`);
+            case "Lemon Yellow":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/lemon_yellow.png`);
+            case "Yellow":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/yellow.png`);
+            case "Peach":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/peach.png`);
+            case "Tangerine":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/tangerine.png`);
+            case "Vibrant Orange":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/vibrant_orange.png`);
+            case "Burnt Orange":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/burnt_orange.png`);
+            case "Scarlet":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/scarlet.png`);
+            case "Cherry Red":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/cherry_red.png`);
+            case "Crimson":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/crimson.png`);
+            case "Hot pink":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/hot_pink.png`);
+            case "Royal Purple":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/royal_purple.png`);
+            case "Navy Blue":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/navy_blue.png`);
+            case "White":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/white.png`);
+            case "Grey":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/grey.png`);
+            case "Black":
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/black.png`);
+        }
     }
 
     async magnifyImage(img, conn, data) {
@@ -1177,7 +1232,7 @@ class ToyCreationManager{
 
                 let image = await new Promise(async (resolve) => {
                     let file = img;
-                    let poster = fs.readFileSync("src/assets/images/nfts/flowaii.png")
+                    let poster = fs.readFileSync(__dirname + "/../assets/images/nfts/flowaii.png")
 
                     await axios.put(createContent.files[0].url, file, {headers: {"Content-Type": ""}})
                         .then()
@@ -1661,6 +1716,10 @@ class ToyCreationManager{
                 {
                     label: "Flowaii",
                     value: "flowaii"
+                },
+                {
+                    label: "Shadow",
+                    value: "shadow"
                 }
             ]
 
@@ -1714,104 +1773,104 @@ class ToyCreationManager{
                 case "first":
                     colors = [
                         {
-                            label: "Red",
-                            value: "Red"
+                            label: "Fire",
+                            value: "Fire Red"
                         },
                         {
-                            label: "Crimson",
-                            value: "Crimson"
-                        },
-                        {
-                            label: "Cherry Red",
-                            value: "Cherry Red"
-                        },
-                        {
-                            label: "Scarlet",
-                            value: "Scarlet"
-                        },
-                        {
-                            label: "Burnt Sienna",
-                            value: "Burnt Sienna"
-                        },
-                        {
-                            label: "Orange",
-                            value: "Orange"
-                        },
-                        {
-                            label: "Tangerine",
-                            value: "Tangerine"
-                        },
-                        {
-                            label: "Burnt Orange",
-                            value: "Burnt Orange"
-                        },
-                        {
-                            label: "Peach",
-                            value: "Peach"
-                        },
-                        {
-                            label: "Yellow",
-                            value: "Yellow"
-                        },
-                        {
-                            label: "Lemon Yellow",
-                            value: "Lemon Yellow"
-                        },
-                        {
-                            label: "Canary Yellow",
-                            value: "Canary Yellow"
-                        },
-                        {
-                            label: "Golden Yellow",
-                            value: "Golden Yellow"
-                        },
-                        {
-                            label: "Lime Green",
-                            value: "Lime Green"
-                        },
-                        {
-                            label: "Forest Green",
-                            value: "Forest Green"
-                        },
-                        {
-                            label: "Olive Green",
-                            value: "Olive Green"
-                        },
-                        {
-                            label: "Teal",
-                            value: "Teal"
+                            label: "Sky blue",
+                            value: "Sky Blue"
                         },
                         {
                             label: "Aqua",
                             value: "Aqua"
                         },
                         {
-                            label: "Light Blue",
-                            value: "Light Blue"
+                            label: "Dark Teal",
+                            value: "Dark Teal"
                         },
                         {
-                            label: "Royal Blue",
-                            value: "Royal Blue"
+                            label: "Teal",
+                            value: "Teal"
+                        },
+                        {
+                            label: "FLOW Green",
+                            value: "Pastel Green"
+                        },
+                        {
+                            label: "Forest Green",
+                            value: "Forest Green"
+                        },
+                        {
+                            label: "FLOW Pink",
+                            value: "Pastel Pink"
+                        },
+                        {
+                            label: "Warm Brown",
+                            value: "Warm Brown"
+                        },
+                        {
+                            label: "FLOW Yellow",
+                            value: "Pastel Yellow"
+                        },
+                        {
+                            label: "Lemon",
+                            value: "Lemon Yellow"
+                        },
+                        {
+                            label: "Yellow",
+                            value: "Yellow"
+                        },
+                        {
+                            label: "Peach",
+                            value: "Peach"
+                        },
+                        {
+                            label: "Tangerine",
+                            value: "Tangerine"
+                        },
+                        {
+                            label: "FLOW Orange",
+                            value: "Vibrant Orange"
+                        },
+                        {
+                            label: "Burnt Orange",
+                            value: "Burnt Orange"
+                        },
+                        {
+                            label: "Scarlet",
+                            value: "Scarlet"
+                        },
+                        {
+                            label: "Cherry",
+                            value: "Cherry Red"
+                        },
+                        {
+                            label: "Crimson",
+                            value: "Crimson"
+                        },
+                        {
+                            label: "Hot Pink",
+                            value: "Hot pink"
+                        },
+                        {
+                            label: "Royal Purple",
+                            value: "Royal Purple"
                         },
                         {
                             label: "Navy Blue",
                             value: "Navy Blue"
                         },
                         {
-                            label: "Lavender",
-                            value: "Lavender"
+                            label: "White",
+                            value: "White"
                         },
                         {
-                            label: "Violet",
-                            value: "Violet"
+                            label: "Grey",
+                            value: "Grey"
                         },
                         {
-                            label: "Magenta",
-                            value: "Magenta"
-                        },
-                        {
-                            label: "Pink",
-                            value: "Pink"
+                            label: "Black",
+                            value: "Black"
                         }
                     ];
                     break;
@@ -2138,4 +2197,6 @@ class ToyCreationManager{
 module.exports = {
     ToyCreationManager
 }
+
+
 
