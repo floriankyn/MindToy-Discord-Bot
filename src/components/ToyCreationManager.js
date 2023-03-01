@@ -10,6 +10,7 @@ const { createCanvas, loadImage } = require('canvas')
 const fetch = require('node-fetch');
 const { request } = require('graphql-request');
 const axios = require("axios")
+const {Base64} = require("js-base64");
 
 class ToyCreationManager{
     constructor(interaction=null, client=null, config=null) {
@@ -712,7 +713,7 @@ class ToyCreationManager{
                 case "headz":
                     image = fs.readFileSync(__dirname + "/../assets/images/styles/headz.png");
 
-                    sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
+                    sdk.auth(`Basic ${Base64.encode(this.config.stable_diffusion.token)}`);
                     sdk.postModelsModelidInferences({
                         parameters: {
                             prompt: `Minimal Abstract Art Toy, ${data.color1}, ${data.color2}, ${data.words}`,
@@ -737,7 +738,7 @@ class ToyCreationManager{
                     });
                     break;
                 case "flowaii":
-                    sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
+                    sdk.auth(`Basic ${Base64.encode(this.config.stable_diffusion.token)}`);
                     sdk.postModelsModelidInferences({
                             parameters: {
                                 prompt: `Minimal Abstract Art Toy, ${data.color1}, ${data.color2}, ${data.words}`,
@@ -762,7 +763,7 @@ class ToyCreationManager{
                 case "shadow":
                     image = await this.pickShadowImage(data.color1);
 
-                    sdk.auth('Basic YXBpX0ljeWdJTGR0Unl1RlRIOVo4czFmd1E6MzAxOTQzOTQ0NmU5NTE2ODVhN2M4NzdkYjg5YWM4YTk=');
+                    sdk.auth(`Basic ${Base64.encode(this.config.stable_diffusion.token)}`);
                     sdk.postModelsModelidInferences({
                             parameters: {
                                 prompt: `Minimal Abstract Art Toy, ${data.color1}, ${data.color2}, ${data.words}`,
