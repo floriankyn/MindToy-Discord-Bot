@@ -50,7 +50,4 @@ client.on("interactionCreate", async (interaction) => {
     await new ToyCreationManager(interaction, client, config).on();
 });
 
-client.on(`messageCreate`, async (message) => {
-});
-
 client.login(config.discord.token).then().catch();
