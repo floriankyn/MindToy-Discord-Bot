@@ -1877,106 +1877,106 @@ class ToyCreationManager{
                 case "second":
                     colors = [
                         {
-                            label: "Red",
-                            value: "Red",
+                            label: "Fire",
+                            value: "Fire Red"
                         },
                         {
-                            label: "Crimson",
-                            value: "Crimson",
-                        },
-                        {
-                            label: "Cherry Red",
-                            value: "Cherry Red",
-                        },
-                        {
-                            label: "Scarlet",
-                            value: "Scarlet",
-                        },
-                        {
-                            label: "Burnt Sienna",
-                            value: "Burnt Sienna",
-                        },
-                        {
-                            label: "Orange",
-                            value: "Orange",
-                        },
-                        {
-                            label: "Tangerine",
-                            value: "Tangerine",
-                        },
-                        {
-                            label: "Burnt Orange",
-                            value: "Burnt Orange",
-                        },
-                        {
-                            label: "Peach",
-                            value: "Peach",
-                        },
-                        {
-                            label: "Yellow",
-                            value: "Yellow",
-                        },
-                        {
-                            label: "Lemon Yellow",
-                            value: "Lemon Yellow",
-                        },
-                        {
-                            label: "Canary Yellow",
-                            value: "Canary Yellow",
-                        },
-                        {
-                            label: "Golden Yellow",
-                            value: "Golden Yellow",
-                        },
-                        {
-                            label: "Lime Green",
-                            value: "Lime Green",
-                        },
-                        {
-                            label: "Forest Green",
-                            value: "Forest Green",
-                        },
-                        {
-                            label: "Olive Green",
-                            value: "Olive Green",
-                        },
-                        {
-                            label: "Teal",
-                            value: "Teal",
+                            label: "Sky blue",
+                            value: "Sky Blue"
                         },
                         {
                             label: "Aqua",
-                            value: "Aqua",
+                            value: "Aqua"
                         },
                         {
-                            label: "Light Blue",
-                            value: "Light Blue",
+                            label: "Dark Teal",
+                            value: "Dark Teal"
                         },
                         {
-                            label: "Royal Blue",
-                            value: "Royal Blue",
+                            label: "Teal",
+                            value: "Teal"
+                        },
+                        {
+                            label: "FLOW Green",
+                            value: "Pastel Green"
+                        },
+                        {
+                            label: "Forest Green",
+                            value: "Forest Green"
+                        },
+                        {
+                            label: "FLOW Pink",
+                            value: "Pastel Pink"
+                        },
+                        {
+                            label: "Warm Brown",
+                            value: "Warm Brown"
+                        },
+                        {
+                            label: "FLOW Yellow",
+                            value: "Pastel Yellow"
+                        },
+                        {
+                            label: "Lemon",
+                            value: "Lemon Yellow"
+                        },
+                        {
+                            label: "Yellow",
+                            value: "Yellow"
+                        },
+                        {
+                            label: "Peach",
+                            value: "Peach"
+                        },
+                        {
+                            label: "Tangerine",
+                            value: "Tangerine"
+                        },
+                        {
+                            label: "FLOW Orange",
+                            value: "Vibrant Orange"
+                        },
+                        {
+                            label: "Burnt Orange",
+                            value: "Burnt Orange"
+                        },
+                        {
+                            label: "Scarlet",
+                            value: "Scarlet"
+                        },
+                        {
+                            label: "Cherry",
+                            value: "Cherry Red"
+                        },
+                        {
+                            label: "Crimson",
+                            value: "Crimson"
+                        },
+                        {
+                            label: "Hot Pink",
+                            value: "Hot pink"
+                        },
+                        {
+                            label: "Royal Purple",
+                            value: "Royal Purple"
                         },
                         {
                             label: "Navy Blue",
-                            value: "Navy Blue",
+                            value: "Navy Blue"
                         },
                         {
-                            label: "Lavender",
-                            value: "Lavender",
+                            label: "White",
+                            value: "White"
                         },
                         {
-                            label: "Violet",
-                            value: "Violet",
+                            label: "Grey",
+                            value: "Grey"
                         },
                         {
-                            label: "Magenta",
-                            value: "Magenta",
-                        },
-                        {
-                            label: "Pink",
-                            value: "Pink",
+                            label: "Black",
+                            value: "Black"
                         }
-                    ]
+                    ];
                     break;
             }
 
