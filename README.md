@@ -1,2 +1,2 @@
-# Discord-Bot-Template
-A simple discord bot repository template that uses nodejs
+# MindToy-Discord-Bot
+Readme comming on 03/03/2023
