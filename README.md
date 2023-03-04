@@ -6,8 +6,6 @@
   <br>
 </h1>
 
----
-
 <h4 align="center">Create toys from your mind with our <a href="https://discord.gg/DrBvwzpt5B" target="_blank">Discord app</a> and get it shipped to your address with a <a href="https://flow.com/">Flow NFT</a>.</h4>
 
 <p align="center">
