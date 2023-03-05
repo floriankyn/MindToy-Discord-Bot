@@ -24,9 +24,9 @@
   <a href="#Credits">Credits</a>
 </p>
 
-<p align="center">
-    <img src="https://github.com/floriankyn/MindToy-Discord-Bot/blob/main/src/assets/images/example.gif?raw=true">
-</p>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7WevQorX2dQ?controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 
 ## Key Features
 
@@ -43,7 +43,7 @@
 * Feedbacks are important
     - We listen to our user. Come to our discord over #Feedback.
 * Weekly updates
-    - Fixing bugs is a thing. We add features every weeks on top of solving issues
+    - Fixing bugs is a thing. We add features every weeks on top of that.
 
 ## How To Use
 
