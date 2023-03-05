@@ -24,9 +24,8 @@
   <a href="#Credits">Credits</a>
 </p>
 
-<p align="center">
-    <img src="https://github.com/floriankyn/MindToy-Discord-Bot/blob/main/src/assets/images/example.gif?raw=true">
-</p>
+
+https://user-images.githubusercontent.com/45848097/222940578-d73aba0e-7d5d-4992-add2-f1d70e43024c.mp4
 
 
 ## Key Features
