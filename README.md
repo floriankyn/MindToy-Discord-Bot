@@ -23,3 +23,7 @@
   <a href="#credits">Known Issues</a> •
   <a href="#credits">Credits</a>
 </p>
+
+<p align="center">
+    <img src="C:\Users\Chigu\Documents\GitHub\MindToy-Discord\src\assets\images\example.gif">
+</p>
