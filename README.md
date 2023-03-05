@@ -19,10 +19,9 @@
   <a href="#key-features">Key Features</a> •
   <a href="#how-to-use">How To Use</a> •
   <a href="#download">The Project</a> •
-  <a href="#credits">Future Updates</a> •
-  <a href="#credits">Known Issues</a> •
-  <a href="#credits">Credits</a> *
-  <a href="#credits">Credits</a>
+  <a href="#Future Updates">Future Updates</a> •
+  <a href="#Last Patch Note">Last PatchNote</a> *
+  <a href="#Credits">Credits</a>
 </p>
 
 <p align="center">
@@ -115,9 +114,60 @@ $ node index.js
 > 🚀Integrating FLOW & Niftory API to mint licence NFTs on the blockchain for a new co-licencing model.
 
 * With FLOW Blockchain, Mind Toy is designing an innovative co-licensing business model using NFTs and split royalty smart contracts.
- * Mind Toy is planning solutions for secondary marketplace sales/rentals of NFT licenses.
+* Mind Toy is planning solutions for secondary marketplace sales/rentals of NFT licenses.
 
 > #co-creation #NFT #smartcontracts #AI #3Dprinting #Discord #secondarymarketplace
 
 ## Future Updates
 
+As for the future we plan many updates. Starting from March 6, 2023 5:00 PM we are about to introduce to more commands. As time goes we we unfold more and more of our vision of mind toy as well as future addition to our app.
+
+> **March 6, 2023 5:00 PM UTC+1**
+> 
+> **/collection**: With this command you'll be able to retrieve all your past generation. From that you'll be able to scroll right by packed image of 4, magnify your creations, delete the useless ones and mode.
+>
+> **March 13, 2023 5:00 PM UTC+1**
+> 
+> **/collection Additions:** We are planning to allow you to purchase toys from your previous generations. It implies not being scared of missing out something as you'll be able to get your toy and nft at any time.
+> 
+> **March 13, 2023 5:00 PM UTC+1**
+> 
+> **The future will unfold the present!**
+
+
+## Last PatchNote
+
+__Version:__ `1.0.1`
+
+__New Features:__
+- We are introducing the "Shadow" Style. Try it out!
+- **25 new colors** added for a total combination of **625** possibilities!
+
+__Improvements:__
+- The bot is now hosted on a vps and can be used at any time.
+
+__Known Issues:__
+- When minting, a duplicate is creating within our database which. Therefore with /mint you'll have your minted nft twice with the possibility to mint it again. We are taking care of that issue.
+
+__Notes:__
+- The project is now open source. You can check it out  here https://github.com/floriankyn/MindToy-Discord-Bot
+- A readme is coming soon.
+
+
+## Credits
+
+### The Team:
+> 💻 **Project Head Developer:** [Florian Lepage]()
+> 
+> 💡 **The Idea Guy & Project Manager** Josh
+>
+
+
+### Libraries and software used:
+
+<a href="https://nodejs.org/en/">Node.JS</a> •
+<a href="https://discord.js.org/#/">Discord.JS</a> •
+<a href="https://www.niftory.com/">Niftory</a> •
+<a href="https://developer.paypal.com/api/rest/">Paypal</a> •
+<a href="https://www.flow.com">Flow Blockchain</a> *
+<a href="https://www.scenario.com/">Scenario</a>
