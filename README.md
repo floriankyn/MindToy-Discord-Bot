@@ -101,20 +101,20 @@ $ node index.js
 
 ## The Project
 
-Mind Toy is a brand that offers co-creative product design with On-demand manufacture
-Customers, aided by ai image generative models can design and receive physical items 100% unique to them.
-Brands, IP, and creators can connect with customers via co-creative engagement and sell products together with fans.
-All inside a simple to use Discord bot that allows users create, mint and order physical collectibles.
+* Mind Toy is a brand that offers co-creative product design with On-demand manufacture.
+* Customers, aided by ai image generative models can design and receive physical items 100% unique to them.
+* Brands, IP, and creators can connect with customers via co-creative engagement and sell products together with fans.
+* All inside a simple to use Discord bot that allows users create, mint and order physical collectibles.
 
-💡Customers design unique physical goods
-🤝Brands co-create products with fans
-🧠Combining fine tuned Stable diffusion with a bespoke pipeline to colour 3D print objects
-🚀Integrating FLOW & Niftory API to mint licence NFTs on the blockchain for a new co-licencing model.
+- 💡Customers design unique physical goods
+- 🤝Brands co-create products with fans
+- 🧠Combining fine tuned Stable diffusion with a bespoke pipeline to colour 3D print objects
+- 🚀Integrating FLOW & Niftory API to mint licence NFTs on the blockchain for a new co-licencing model.
 
-With FLOW Blockchain, Mind Toy is designing an innovative co-licensing business model using NFTs and split royalty smart contracts.
-Mind Toy is planning solutions for secondary marketplace sales/rentals of NFT licenses.
+* With FLOW Blockchain, Mind Toy is designing an innovative co-licensing business model using NFTs and split royalty smart contracts.
+ * Mind Toy is planning solutions for secondary marketplace sales/rentals of NFT licenses.
 
-#co-creation #NFT #smartcontracts #AI #3Dprinting #Discord #secondarymarketplace
+> #co-creation #NFT #smartcontracts #AI #3Dprinting #Discord #secondarymarketplace
 
 ## Future Updates
 
