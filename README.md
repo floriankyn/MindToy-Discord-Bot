@@ -25,5 +25,5 @@
 </p>
 
 <p align="center">
-    <img src="C:\Users\Chigu\Documents\GitHub\MindToy-Discord\src\assets\images\example.gif">
+    <img src="https://github.com/floriankyn/MindToy-Discord-Bot/blob/main/src/assets/images/example.gif?raw=true">
 </p>
