@@ -18,9 +18,9 @@
 <p align="center">
   <a href="#key-features">Key Features</a> •
   <a href="#how-to-use">How To Use</a> •
-  <a href="#The Project">The Project</a> •
-  <a href="#Future Updates">Future Updates</a> •
-  <a href="#Last PatchNote">Last PatchNote</a> •
+  <a href="#The-Project">The Project</a> •
+  <a href="#Future-Updates">Future Updates</a> •
+  <a href="#Last-PatchNote">Last PatchNote</a> •
   <a href="#Credits">Credits</a>
 </p>
 
