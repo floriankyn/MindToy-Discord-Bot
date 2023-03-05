@@ -27,3 +27,21 @@
 <p align="center">
     <img src="https://github.com/floriankyn/MindToy-Discord-Bot/blob/main/src/assets/images/example.gif?raw=true">
 </p>
+
+## Key Features
+
+* Input colors, words, styles 
+    - Within seconds watch the image being generated.
+* Edit your input in case of mistake
+    - You miss one of the inputs? Don't worry, you can edit them before the generation.
+* Initiate and handle several generation at the same time.
+    - Let your mind talk freely by launching several generation. 
+* Interactive Inputs
+    - We let you chose among 25 different colors. 625 combination possible.
+* [Discord](https://discord.gg/dHbBAPnySx/) Support Available
+    - In case of any issues come to our discord. We help for free ;)
+* Feedbacks are important
+    - We listen to our user. Come to our discord over #Feedback.
+* Weekly updates
+    - Fixing bugs is a thing. We add features every weeks on top of solving issues
+
