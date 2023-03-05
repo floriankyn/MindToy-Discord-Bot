@@ -45,3 +45,55 @@
 * Weekly updates
     - Fixing bugs is a thing. We add features every weeks on top of solving issues
 
+## How To Use
+
+To clone and run this application, you'll need [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. From your command line:
+
+```bash
+# Clone this repository
+$ git clone https://github.com/floriankyn/MindToy-Discord-Bot.git
+
+# Go into the repository
+$ cd MindToy-Discord-Bot
+
+# Install dependencies
+$ npm install
+
+# Setup Mysql Database
+$ sudo apt update
+$ sudo apt install mysql-server
+$ sudo mysql_secure_installation
+
+# Create a user
+$ CREATE USER 'bot'@'host' IDENTIFIED WITH authentication_plugin BY '123456789';
+$ GRANT ALL PRIVILEGES ON *.* TO 'bot'@'localhost' WITH GRANT OPTION;
+
+# Add the credentials to ./src/config/config.json
+$ cd /src/config/config.json
+$ nano config.json
+
+# Replace Paypal REST API KEY
+# Replace Scenario API KEY
+# Replace Discord bot Token
+# Replace Main Discord Guild ID
+# Replace Niftory API KEY
+
+# Run the app
+$ cd src
+$ node index.js
+```
+
+> **APIS**
+> get your credentials for the api we uses below.
+> 
+> **Paypal:** [Get started with PayPal Developer](https://developer.paypal.com/api/rest/)
+> 
+> **Scenario:** [Getting Started with Scenario API](https://docs.scenario.gg/docs/getting-started)
+> 
+> **Discord:** [Get your discord bot token](https://www.writebots.com/discord-bot-token/)
+> 
+> **Niftory:** [Getting Started with Niftory](https://docs.niftory.com/home/get-your-api-keys)
+>
+
+> **Note**
+> If you're willing to help the project, [see this guide](https://blog.scottlowe.org/2015/01/27/using-fork-branch-git-workflow/) to fork the repo and build additional features.
