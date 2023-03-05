@@ -24,18 +24,19 @@
   <a href="#Credits">Credits</a>
 </p>
 
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/7WevQorX2dQ?controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+<p align="center">
+    <img src="https://github.com/floriankyn/MindToy-Discord-Bot/blob/main/src/assets/images/example.gif?raw=true">
+</p>
 
 
 ## Key Features
 
-* Input colors, words, styles 
+* Input colors, words, styles
     - Within seconds watch the image being generated.
 * Edit your input in case of mistake
     - You miss one of the inputs? Don't worry, you can edit them before the generation.
 * Initiate and handle several generation at the same time.
-    - Let your mind talk freely by launching several generation. 
+    - Let your mind talk freely by launching several generation.
 * Interactive Inputs
     - We let you chose among 25 different colors. 625 combination possible.
 * [Discord](https://discord.gg/dHbBAPnySx/) Support Available
@@ -85,13 +86,13 @@ $ node index.js
 
 > **APIS**
 > get your credentials for the api we uses below.
-> 
+>
 > **Paypal:** [Get started with PayPal Developer](https://developer.paypal.com/api/rest/)
-> 
+>
 > **Scenario:** [Getting Started with Scenario API](https://docs.scenario.gg/docs/getting-started)
-> 
+>
 > **Discord:** [Get your discord bot token](https://www.writebots.com/discord-bot-token/)
-> 
+>
 > **Niftory:** [Getting Started with Niftory](https://docs.niftory.com/home/get-your-api-keys)
 >
 
@@ -106,11 +107,11 @@ $ node index.js
 * All inside a simple to use Discord bot that allows users create, mint and order physical collectibles.
 
 > 💡Customers design unique physical goods
-> 
+>
 > 🤝Brands co-create products with fans
-> 
+>
 > 🧠Combining fine tuned Stable diffusion with a bespoke pipeline to colour 3D print objects
-> 
+>
 > 🚀Integrating FLOW & Niftory API to mint licence NFTs on the blockchain for a new co-licencing model.
 
 * With FLOW Blockchain, Mind Toy is designing an innovative co-licensing business model using NFTs and split royalty smart contracts.
@@ -123,15 +124,15 @@ $ node index.js
 As for the future we plan many updates. Starting from March 6, 2023 5:00 PM we are about to introduce to more commands. As time goes we we unfold more and more of our vision of mind toy as well as future addition to our app.
 
 > **March 6, 2023 5:00 PM UTC+1**
-> 
+>
 > **/collection**: With this command you'll be able to retrieve all your past generation. From that you'll be able to scroll right by packed image of 4, magnify your creations, delete the useless ones and mode.
 >
 > **March 13, 2023 5:00 PM UTC+1**
-> 
+>
 > **/collection Additions:** We are planning to allow you to purchase toys from your previous generations. It implies not being scared of missing out something as you'll be able to get your toy and nft at any time.
-> 
+>
 > **March 13, 2023 5:00 PM UTC+1**
-> 
+>
 > **The future will unfold the present!**
 
 
@@ -158,7 +159,7 @@ __Notes:__
 
 ### The Team:
 > 💻 **Project Head Developer:** [Florian Lepage](https://www.linkedin.com/in/florian-lepage/) <p align="left"> <a href="https://www.dev.to/floriankyn" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/danielcranney/readme-generator/main/public/icons/socials/devdotto.svg" width="32" height="32" /></a> <a href="https://discord.gg/ZwsyKz2BuC" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/danielcranney/readme-generator/main/public/icons/socials/discord.svg" width="32" height="32" /></a> <a href="https://www.github.com/floriankyn" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/danielcranney/readme-generator/main/public/icons/socials/github.svg" width="32" height="32" /></a> <a href="http://www.instagram.com/florian_kyn" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/danielcranney/readme-generator/main/public/icons/socials/instagram.svg" width="32" height="32" /></a> <a href="https://www.linkedin.com/in/florian-lepage" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/danielcranney/readme-generator/main/public/icons/socials/linkedin.svg" width="32" height="32" /></a> <a href="https://www.stackoverflow.com/users/13493116/florian-lepage" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/danielcranney/readme-generator/main/public/icons/socials/stackoverflow.svg" width="32" height="32" /></a> <a href="https://www.twitter.com/florian_kyn" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/danielcranney/readme-generator/main/public/icons/socials/twitter.svg" width="32" height="32" /></a></p>
-> 
+>
 > 💡 **The Idea Guy & Project Manager** Josh
 >
 
