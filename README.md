@@ -20,7 +20,7 @@
   <a href="#how-to-use">How To Use</a> •
   <a href="#download">The Project</a> •
   <a href="#Future Updates">Future Updates</a> •
-  <a href="#Last Patch Note">Last PatchNote</a> *
+  <a href="#Last Patch Note">Last PatchNote</a> •
   <a href="#Credits">Credits</a>
 </p>
 
@@ -169,5 +169,5 @@ __Notes:__
 <a href="https://discord.js.org/#/">Discord.JS</a> •
 <a href="https://www.niftory.com/">Niftory</a> •
 <a href="https://developer.paypal.com/api/rest/">Paypal</a> •
-<a href="https://www.flow.com">Flow Blockchain</a> *
+<a href="https://www.flow.com">Flow Blockchain</a> •
 <a href="https://www.scenario.com/">Scenario</a>
