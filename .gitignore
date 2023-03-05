@@ -106,4 +106,4 @@ dist
 .idea/
 package-lock.json
 
-src/config/config.json
+./src/config/config.json
