@@ -47,7 +47,7 @@ class ToyCreationManager{
     async on() {
         switch (this.interaction.commandName) {
             case "toy":
-                await this.interaction.deferReply({ephemeral: true, fetchReply: true})
+                await this.interaction.deferReply({fetchReply: true})
                     .then(async (message) => {
                         if(await this.checkCreationStatus()) {
                             await this.gatherUserInput(message.id);
@@ -379,7 +379,6 @@ class ToyCreationManager{
 
         await this.interaction.webhook.editMessage(messageId,
             {
-                ephemeral: true,
                 fetchReply: true,
                 embeds: [embed],
                 components: []
@@ -454,7 +453,6 @@ class ToyCreationManager{
 
                 await this.interaction.webhook.editMessage(messageId,
                     {
-                        ephemeral: true,
                         fetchReply: true,
                         embeds: [
                             new EmbedBuilder()
@@ -482,7 +480,6 @@ class ToyCreationManager{
 
                     await this.interaction.webhook.editMessage(messageId,
                         {
-                            ephemeral: true,
                             fetchReply: true,
                             embeds: [
                                 new EmbedBuilder()
@@ -562,7 +559,6 @@ class ToyCreationManager{
                                             case `image1_${messageId}`:
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
-                                                        ephemeral: true,
                                                         fetchReply: true,
                                                         embeds: [
                                                             new EmbedBuilder()
@@ -589,7 +585,6 @@ class ToyCreationManager{
                                             case `image2_${messageId}`:
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
-                                                        ephemeral: true,
                                                         fetchReply: true,
                                                         embeds: [
                                                             new EmbedBuilder()
@@ -616,7 +611,6 @@ class ToyCreationManager{
                                             case `image3_${messageId}`:
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
-                                                        ephemeral: true,
                                                         fetchReply: true,
                                                         embeds: [
                                                             new EmbedBuilder()
@@ -643,7 +637,6 @@ class ToyCreationManager{
                                             case `image4_${messageId}`:
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
-                                                        ephemeral: true,
                                                         fetchReply: true,
                                                         embeds: [
                                                             new EmbedBuilder()
@@ -673,7 +666,6 @@ class ToyCreationManager{
 
                                                 await this.interaction.webhook.editMessage(messageId,
                                                     {
-                                                        ephemeral: true,
                                                         fetchReply: true,
                                                         embeds: [
                                                             new EmbedBuilder()
@@ -1673,7 +1665,6 @@ class ToyCreationManager{
 
                 await this.interaction.webhook.editMessage(messageId,
                     {
-                        ephemeral: true,
                         embeds: [embed],
                         components: [component]
                     }
@@ -1758,7 +1749,6 @@ class ToyCreationManager{
 
             await this.interaction.webhook.editMessage(messageId,
                 {
-                    ephemeral: true,
                     embeds: [embed],
                     components: [component]
                 }
@@ -2020,7 +2010,6 @@ class ToyCreationManager{
 
             await this.interaction.webhook.editMessage(messageId,
                 {
-                    ephemeral: true,
                     embeds: [embed],
                     components: [component]
                 }
@@ -2069,7 +2058,6 @@ class ToyCreationManager{
 
             await this.interaction.webhook.editMessage(messageId,
                 {
-                    ephemeral: true,
                     embeds: [embed],
                     components: [component]
                 }
