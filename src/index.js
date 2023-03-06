@@ -31,6 +31,7 @@ const { Database } = require("./database/Database.js");
 
 //Modules Imports
 const { ToyCreationManager } = require("./components/ToyCreationManager.js");
+const { CollectionManager } = require("./components/CollectionManager.js");
 
 client.on('ready', async() => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -38,16 +39,19 @@ client.on('ready', async() => {
     await new Database(config).checkConnectionState();
 
     await new SQLTablesManager(config, [
-        ToyCreationManager
+        ToyCreationManager,
+        CollectionManager
     ]).loadTables();
 
     await new CommandsLoader(client, [
-        ToyCreationManager
+        ToyCreationManager,
+        CollectionManager
     ], config).loadCommands();
 });
 
 client.on("interactionCreate", async (interaction) => {
     await new ToyCreationManager(interaction, client, config).on();
+    await new CollectionManager(interaction, client, config).on();
 });
 
 client.login(config.discord.token).then().catch();
