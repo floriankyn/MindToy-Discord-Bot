@@ -11,6 +11,8 @@ const fetch = require('node-fetch');
 const { request } = require('graphql-request');
 const axios = require("axios")
 const {Base64} = require("js-base64");
+const { CollectionManager } = require("./CollectionManager.js");
+
 
 class ToyCreationManager{
     constructor(interaction=null, client=null, config=null) {
@@ -439,6 +441,11 @@ class ToyCreationManager{
                     img2Buffer = img2b.toBuffer();
                     img3Buffer = img3b.toBuffer();
                     img4Buffer = img4b.toBuffer();
+
+
+                    if(generation.inference.progress === 1) {
+                        await new CollectionManager(this.interaction, this.client, this.config).saveGeneration([img1Buffer, img2Buffer, img3Buffer, img4Buffer, canvas.toBuffer()], this.interaction.user.id, data);
+                    }
 
                     attachment = new AttachmentBuilder(canvas.toBuffer(), {name: "generation.png"});
                     file.push(attachment)
@@ -923,74 +930,80 @@ class ToyCreationManager{
 
         let attachment = new AttachmentBuilder(img, {name: `${order[0].id}.png`});
 
-        await this.interaction.followUp(
-            {
-                ephemeral: true,
-                embeds: [
-                    new EmbedBuilder()
-                        .setAuthor({name: this.client.user.username, iconURL: this.client.user.avatarURL()})
-                        .setImage(`attachment://${order[0].id}.png`)
-                        .setColor("Blue")
-                        .addFields(
-                            {
-                                name: `Order ID`,
-                                value: `${order[0].id}`,
-                                inline: true
-                            },
-                            {
-                                name: `Name`,
-                                value: `${order[1].purchase_units[0].items[0].name}`,
-                                inline: true
-                            },
-                            {
-                                name: `Description`,
-                                value: `55mm Art Toy \n Delivered in 3/4 Weeks \n Your Licence NFT`,
-                                inline: false
-                            },
-                            {
-                                name: `Quantity`,
-                                value: `1`,
-                                inline: true
-                            },
-                            {
-                                name: `Total`,
-                                value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
-                                inline: true
-                            },
-                            {
-                                name: "Status",
-                                value: `Waiting 🟠`,
-                                inline: true
-                            }
-                        )
-                        .setDescription("**Nice one!** \n" +
-                            "**Want as a PHYSICAL COLLECTIBLE!**\n" +
-                            "**+ Exclusive NFT Licence on FLOW ?**" +
-                            "Pay using Paypal below."
-                        )
-                        .setFooter(
-                            {
-                                text: this.interaction.guild.name,
-                                iconURL: this.interaction.guild.iconURL()
-                            }
-                        )
-                        .setTimestamp()
-                ],
-                components: [
-                    new ActionRowBuilder()
-                        .addComponents(
-                            new ButtonBuilder()
-                                .setStyle("Link")
-                                .setLabel("Paypal")
-                                .setEmoji("<:paypal:1077766385297522749>")
-                                .setURL(order[0].links[1].href)
-                        )
-                ],
-                files: [
-                    attachment
-                ]
-            }
-        ).then(async (message) => {
+        let order2 = await new Promise(async (resolve) => {
+            await this.interaction.followUp(
+                {
+                    ephemeral: true,
+                    embeds: [
+                        new EmbedBuilder()
+                            .setAuthor({name: this.client.user.username, iconURL: this.client.user.avatarURL()})
+                            .setImage(`attachment://${order[0].id}.png`)
+                            .setColor("Blue")
+                            .addFields(
+                                {
+                                    name: `Order ID`,
+                                    value: `${order[0].id}`,
+                                    inline: true
+                                },
+                                {
+                                    name: `Name`,
+                                    value: `${order[1].purchase_units[0].items[0].name}`,
+                                    inline: true
+                                },
+                                {
+                                    name: `Description`,
+                                    value: `55mm Art Toy \n Delivered in 3/4 Weeks \n Your Licence NFT`,
+                                    inline: false
+                                },
+                                {
+                                    name: `Quantity`,
+                                    value: `1`,
+                                    inline: true
+                                },
+                                {
+                                    name: `Total`,
+                                    value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
+                                    inline: true
+                                },
+                                {
+                                    name: "Status",
+                                    value: `Waiting 🟠`,
+                                    inline: true
+                                }
+                            )
+                            .setDescription("**Nice one!** \n" +
+                                "**Want as a PHYSICAL COLLECTIBLE!**\n" +
+                                "**+ Exclusive NFT Licence on FLOW ?**" +
+                                "Pay using Paypal below."
+                            )
+                            .setFooter(
+                                {
+                                    text: this.interaction.guild.name,
+                                    iconURL: this.interaction.guild.iconURL()
+                                }
+                            )
+                            .setTimestamp()
+                    ],
+                    components: [
+                        new ActionRowBuilder()
+                            .addComponents(
+                                new ButtonBuilder()
+                                    .setStyle("Link")
+                                    .setLabel("Paypal")
+                                    .setEmoji("<:paypal:1077766385297522749>")
+                                    .setURL(order[0].links[1].href)
+                            )
+                    ],
+                    files: [
+                        attachment
+                    ]
+                }
+            ).then(async message => {
+                await resolve(message.id)
+            }).catch(console.error);
+        })
+
+        let manageOrder = await new Promise(async (resolve) => {
             let orderStatus = "Waiting";
 
             while (orderStatus !== "CREATED") {
@@ -1008,167 +1021,168 @@ class ToyCreationManager{
                             'Authorization': `Bearer ${accessToken}`
                         }
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        resolve(response.json());
-                    })
-                    .catch(error => console.error(error));
-                })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            resolve(response.json());
+                        })
+                        .catch(error => console.error(error));
+                });
 
-
-                if(status.status === "APPROVED") {
+                if (status.status === "APPROVED") {
                     orderStatus = "APPROVED";
 
                     fs.writeFileSync(__dirname + `/../assets/images/nfts/minted/${order[0].id}.png`, img)
 
-                    let dataStr = JSON.stringify(data);
-                    let dataToDb = "";
-
-                    for(const e of dataStr) {
-                        dataToDb += e.replace('"', "'");
-                    }
-
-                    await this.db.query(conn, `INSERT INTO dc_minted_nfts (user_id, image_link, paypal_order_id, nftData, status) VALUES ("${this.interaction.user.id}", "${`/../assets/images/nfts/minted/${order[0].id}.png`}", "${order[0].id}", "${dataToDb}", "PAYED")`)
-
-                    await this.interaction.webhook.editMessage(message.id,{
-                        ephemeral: true,
-                        embeds: [
-                            new EmbedBuilder()
-                                .setImage(`attachment://${order[0].id}.png`)
-                                .setColor("Green")
-                                .addFields(
-                                    {
-                                        name: `Order ID`,
-                                        value: `${order[0].id}`,
-                                        inline: true
-                                    },
-                                    {
-                                        name: `Name`,
-                                        value: `${order[1].purchase_units[0].items[0].name}`,
-                                        inline: true
-                                    },
-                                    {
-                                        name: `Description`,
-                                        value: `${order[1].purchase_units[0].items[0].description}`,
-                                        inline: false
-                                    },
-                                    {
-                                        name: `Quantity`,
-                                        value: `1`,
-                                        inline: true
-                                    },
-                                    {
-                                        name: `Total`,
-                                        value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
-                                        inline: true
-                                    },
-                                    {
-                                        name: "Status",
-                                        value: `Approved 🟢`,
-                                        inline: true
-                                    }
-                                )
-                                .setFooter(
-                                    {
-                                        text: this.interaction.guild.name,
-                                        iconURL: this.interaction.guild.iconURL()
-                                    }
-                                )
-                                .setTimestamp()
-                                .setDescription("> Congratulation! Now hit mint in order to get your nft.")
-                        ],
-                        components: [
-                            new ActionRowBuilder()
-                                .addComponents(
-                                    new ButtonBuilder()
-                                        .setLabel("Mint")
-                                        .setStyle("Success")
-                                        .setCustomId(`mint_${message.id}`)
-                                )
-                        ]
-                    }).then(
-                        async (collected) => {
-                            const filter = (i) => i.user.id === this.interaction.user.id && i.customId === `mint_${message.id}`;
-
-                            await this.interaction.channel.awaitMessageComponent({filter})
-                                .then(
-                                    async (collected) => {
-
-                                        await this.interaction.webhook.editMessage(message.id,{
-                                            ephemeral: true,
-                                            embeds: [
-                                                new EmbedBuilder()
-                                                    .setImage(`attachment://${order[0].id}.png`)
-                                                    .setColor("Green")
-                                                    .addFields(
-                                                        {
-                                                            name: `Order ID`,
-                                                            value: `${order[0].id}`,
-                                                            inline: true
-                                                        },
-                                                        {
-                                                            name: `Name`,
-                                                            value: `${order[1].purchase_units[0].items[0].name}`,
-                                                            inline: true
-                                                        },
-                                                        {
-                                                            name: `Description`,
-                                                            value: `${order[1].purchase_units[0].items[0].description}`,
-                                                            inline: false
-                                                        },
-                                                        {
-                                                            name: `Quantity`,
-                                                            value: `1`,
-                                                            inline: true
-                                                        },
-                                                        {
-                                                            name: `Total`,
-                                                            value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
-                                                            inline: true
-                                                        },
-                                                        {
-                                                            name: "Status",
-                                                            value: `Approved 🟢`,
-                                                            inline: true
-                                                        }
-                                                    )
-                                                    .setFooter(
-                                                        {
-                                                            text: this.interaction.guild.name,
-                                                            iconURL: this.interaction.guild.iconURL()
-                                                        }
-                                                    )
-                                                    .setTimestamp()
-                                                    .setDescription("> Congratulation! Now hit mint in order to get your nft.")
-                                            ],
-                                            components: []
-                                        }).then().catch(console.error);
-
-                                        switch (collected.customId) {
-                                            case `mint_${message.id}`:
-                                                await collected.deferUpdate().then().catch(console.error);
-                                                await this.nftManagment(conn, collected, data, attachment, img, order[0].id);
-                                                break;
-                                        }
-                                    }
-                                )
-                                .catch(console.error);
-                        }
-                    ).catch(
-                        (err) => {
-
-                        }
-                    )
-
+                    resolve();
                 }
             }
-        }).catch(console.error);
+        });
+
+        let orderConfirmation = await new Promise(async (resolve) => {
+            let dataStr = JSON.stringify(data);
+            let dataToDb = "";
+
+            for (const e of dataStr) {
+                dataToDb += e.replace('"', "'");
+            }
+
+            await this.db.query(conn, `INSERT INTO dc_minted_nfts (user_id, image_link, paypal_order_id, nftData, status) VALUES ("${this.interaction.user.id}", "${`/../assets/images/nfts/minted/${order[0].id}.png`}","${order[0].id}", "${dataToDb}", "PAYED")`)
+
+            await this.interaction.webhook.editMessage(order2, {
+                ephemeral: true,
+                embeds: [
+                    new EmbedBuilder()
+                        .setImage(`attachment://${order[0].id}.png`)
+                        .setColor("Green")
+                        .addFields(
+                            {
+                                name: `Order ID`,
+                                value: `${order[0].id}`,
+                                inline: true
+                            },
+                            {
+                                name: `Name`,
+                                value: `${order[1].purchase_units[0].items[0].name}`,
+                                inline: true
+                            },
+                            {
+                                name: `Description`,
+                                value: `${order[1].purchase_units[0].items[0].description}`,
+                                inline: false
+                            },
+                            {
+                                name: `Quantity`,
+                                value: `1`,
+                                inline: true
+                            },
+                            {
+                                name: `Total`,
+                                value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
+                                inline: true
+                            },
+                            {
+                                name: "Status",
+                                value: `Approved 🟢`,
+                                inline: true
+                            }
+                        )
+                        .setFooter(
+                            {
+                                text: this.interaction.guild.name,
+                                iconURL: this.interaction.guild.iconURL()
+                            }
+                        )
+                        .setTimestamp()
+                        .setDescription("> Congratulation! Now hit mint in order to get your nft.")
+                ],
+                components: [
+                    new ActionRowBuilder()
+                        .addComponents(
+                            new ButtonBuilder()
+                                .setLabel("Mint")
+                                .setStyle("Success")
+                                .setCustomId(`mint_${order2}`)
+                        )
+                ]
+            }).then(async (message) => {
+                await resolve(message)
+            }).catch(console.error);
+        });
+
+        let orderFinish = await new Promise(async (resolve) => {
+            const filter = (i) => i.user.id === this.interaction.user.id && i.customId === `mint_${orderConfirmation.id}`;
+
+            await this.interaction.channel.awaitMessageComponent({filter})
+                .then(
+                    async (collected) => {
+
+                        await this.interaction.webhook.editMessage(orderConfirmation.id, {
+                            ephemeral: true,
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setImage(`attachment://${order[0].id}.png`)
+                                    .setColor("Green")
+                                    .addFields(
+                                        {
+                                            name: `Order ID`,
+                                            value: `${order[0].id}`,
+                                            inline: true
+                                        },
+                                        {
+                                            name: `Name`,
+                                            value: `${order[1].purchase_units[0].items[0].name}`,
+                                            inline: true
+                                        },
+                                        {
+                                            name: `Description`,
+                                            value: `${order[1].purchase_units[0].items[0].description}`,
+                                            inline: false
+                                        },
+                                        {
+                                            name: `Quantity`,
+                                            value: `1`,
+                                            inline: true
+                                        },
+                                        {
+                                            name: `Total`,
+                                            value: `${order[1].purchase_units[0].items[0].unit_amount.value} ${order[1].purchase_units[0].items[0].unit_amount.currency_code}`,
+                                            inline: true
+                                        },
+                                        {
+                                            name: "Status",
+                                            value: `Approved 🟢`,
+                                            inline: true
+                                        }
+                                    )
+                                    .setFooter(
+                                        {
+                                            text: this.interaction.guild.name,
+                                            iconURL: this.interaction.guild.iconURL()
+                                        }
+                                    )
+                                    .setTimestamp()
+                                    .setDescription("> Congratulation! Now hit mint in order to get your nft.")
+                            ],
+                            components: []
+                        }).then().catch(console.error);
+
+                        switch (collected.customId) {
+                            case `mint_${orderConfirmation.id}`:
+                                await collected.deferUpdate().then().catch(console.error);
+                                await this.nftManagment(conn, collected, data, attachment, img, order[0].id);
+                                break;
+                        }
+                    }
+                )
+                .catch(console.error);
+        })
     }
 
     async nftManagment(conn, collected, nftData, attachment, img, orderId) {
 
+        console.log("Minting NFT SQL UPDATE")
         await this.db.query(conn, `UPDATE dc_minted_nfts SET status = "MINTING" WHERE paypal_order_id = "${orderId}"`);
 
         await this.interaction.followUp(
@@ -1483,6 +1497,7 @@ class ToyCreationManager{
                     });
                 });
 
+                console.log("Minted NFT SQL UPDATE")
                 await this.db.query(conn, `UPDATE dc_minted_nfts SET hash = "${mintedNftInfo.nft.transactions[0].hash}", wallet = "${retrieveWallet.walletById.address}", status = "MINTED" WHERE paypal_order_id = "${orderId}"`);
 
                 await this.interaction.webhook.editMessage(message.id,
@@ -2198,6 +2213,3 @@ class ToyCreationManager{
 module.exports = {
     ToyCreationManager
 }
-
-
-
