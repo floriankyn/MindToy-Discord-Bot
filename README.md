@@ -137,7 +137,7 @@ As for the future we plan many updates. Starting from March 6, 2023 5:00 PM we a
 
 ## Last PatchNote
 
-__Version:__ `1.0.2`
+Version: `1.0.2`
 
 New Features:
     - /collection
@@ -153,7 +153,8 @@ Bug Fix:
 Notes:
     - The project is now open source. You can check it out  here  https://github.com/floriankyn/MindToy-Discord-Bot
 
-Next Major Update:_
+Next Major Update:
+
 March 13, 2023 5:00 PM So in in 7 days
 
 ## Credits
