@@ -808,7 +808,7 @@ class ToyCreationManager{
             case "Pastel Green":
                 return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/pastel_green.png`);
             case "Forest Green":
-                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/forest_green.png`);
+                return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/flow_green.png`);
             case "Pastel Pink":
                 return fs.readFileSync(__dirname + `/../assets/images/styles/colors/shadow/pastel_pink.png`);
             case "Warm Brown":
