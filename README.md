@@ -137,22 +137,25 @@ As for the future we plan many updates. Starting from March 6, 2023 5:00 PM we a
 
 ## Last PatchNote
 
-__Version:__ `1.0.1`
+Version: `1.0.2`
 
-__New Features:__
-- We are introducing the "Shadow" Style. Try it out!
-- **25 new colors** added for a total combination of **625** possibilities!
+New Features:
+    - /collection
+        - Allows you to access and retrieve all your previous generations. No need to be scared to miss out an opportunity. You are now able to magnify those images as well directly from this commad.
+    - A beautiful readme has been added to the github repository. You can see it here: https://github.com/floriankyn/MindToy-Discord-Bot
 
-__Improvements:__
-- The bot is now hosted on a vps and can be used at any time.
+Changes:
+    - The /toy command now starts by being public. We think its the best way to share generations and input. However don't be worried, the payments are still private         as well as the minting.
 
-__Known Issues:__
-- When minting, a duplicate is creating within our database which. Therefore with /mint you'll have your minted nft twice with the possibility to mint it again. We are taking care of that issue.
+Bug Fix: 
+    - The /mint duplication bug is now fixed.
 
-__Notes:__
-- The project is now open source. You can check it out  here https://github.com/floriankyn/MindToy-Discord-Bot
-- A readme is coming soon.
+Notes:
+    - The project is now open source. You can check it out  here  https://github.com/floriankyn/MindToy-Discord-Bot
 
+Next Major Update:
+
+March 13, 2023 5:00 PM So in in 7 days
 
 ## Credits
 
