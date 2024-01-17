@@ -155,7 +155,7 @@ Notes:
 
 Next Major Update:
 
-March 13, 2023 5:00 PM So in in 7 days
+Who knows 
 
 ## Credits
 
